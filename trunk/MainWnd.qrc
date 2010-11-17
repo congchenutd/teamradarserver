@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="MainWnd">
+    <file>Images/Server.png</file>
+    <file>Images/Radar.png</file>
+  </qresource>
+</RCC>
