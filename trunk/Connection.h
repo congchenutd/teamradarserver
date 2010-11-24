@@ -4,33 +4,13 @@
 #include <QTcpSocket>
 #include <QTimer>
 #include <QTime>
+#include <QStringList>
 
-static const int MaxBufferSize = 1024 * 1024;
+static const int MaxBufferSize = 1024;   // 1KB
 
 class Connection : public QTcpSocket
 {
 	Q_OBJECT
-
-public:
-	Connection(QObject *parent);
-	~Connection();
-
-signals:
-	void readyForUse();
-	void newMessage(const QString &from, const QString &message);
-
-private slots:
-	void processReadyRead();
-	void sendPing();
-	void sendGreetingMessage();
-
-private:
-	bool readHeader();
-	int  readDataIntoBuffer(int maxSize = MaxBufferSize);
-	int  getDataLength();
-	bool readProtocolHeader();
-	bool hasEnoughData();
-	void processData();
 
 public:
 	typedef enum {
@@ -38,24 +18,52 @@ public:
 		ReadingGreeting,
 		ReadyForUse
 	} ConnectionState;
-	
+
 	typedef enum {
-		PlainText,
+		Undefined,
+		Greeting,
 		Ping,
 		Pong,
-		Greeting,
-		Undefined
+		Event,
 	} DataType;
 
+public:
+	Connection(QObject *parent);
+	~Connection();
+	QString getUserName() const { return userName; }
+
+signals:
+	void readyForUse();
+	void newMessage(const QString &from, const QString &message);
+
+private slots:
+	void onReadyRead();
+	void sendPing();
+	void sendGreeting();
+
 private:
-	QTimer pingTimer;
-	QTime  pongTime;
+	bool readHeader();
+	int  readDataIntoBuffer(int maxSize = MaxBufferSize);
+	int  getDataLength();
+	bool hasEnoughData();
+	void processData();
+	DataType guessDataType(const QByteArray& header);
+
+public:
+	static const int  TransferTimeout = 30 * 1000;
+	static const int  PongTimeout     = 60 * 1000;
+	static const int  PingInterval    = 10 * 1000;
+
+private:
+	QTimer          pingTimer;
+	QTime           pongTime;
 	ConnectionState state;
 	DataType        dataType;
-	QByteArray buffer;
-	int numBytes;
-	int timerId;
-	bool isGreetingSent;
+	QByteArray      buffer;
+	int             numBytes;
+	int             timerId;
+	bool            isGreetingSent;
+	QString         userName;
 };
 
 #endif // CONNECTION_H

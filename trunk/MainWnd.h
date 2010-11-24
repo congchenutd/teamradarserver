@@ -6,6 +6,7 @@
 #include <QMultiHash>
 #include <QHostAddress>
 #include <QList>
+#include <QSqlTableModel>
 #include "ui_MainWnd.h"
 #include "Server.h"
 #include "../MySetting/MySetting.h"
@@ -16,6 +17,9 @@ class MainWnd : public QDialog
 {
 	Q_OBJECT
 
+	typedef QPair<QString, int> Address;
+	typedef QHash<Address, Connection*> Clients;
+
 public:
 	MainWnd(QWidget *parent = 0, Qt::WFlags flags = 0);
 	~MainWnd();
@@ -24,31 +28,39 @@ protected:
 	void closeEvent(QCloseEvent* event);
 
 private slots:
-	void onClose();
 	void onShutdown();
 	void onTrayActivated(QSystemTrayIcon::ActivationReason reason);
-	void onShow();
+	void onPortChanged(int port);
 	void newConnection(Connection* connection);
-	void connectionError(QAbstractSocket::SocketError socketError);
+	void connectionError();
 	void disconnected();
 	void readyForUse();
-	void onPortChanged(int port);
+	void onNewMessage(const QString& user, const QString& message);
+	void onClear();
+	void onAbout();
 
 private:
 	void createTray();
 	void updateLocalAddresses();
 	void removeConnection(Connection* connection);
-	bool hasConnection(const QHostAddress& senderIp, int senderPort) const;
+	bool hasConnection(const Connection* connection) const;
 	QString getCurrentLocalAddress() const;
 	void    setCurrentLocalAddress(const QString& address);
+	void log      (const QString& user, const QString& event, const QString& parameters);
+	void broadcast(const QString& user, const QString& event, const QString& parameters);
+	bool isFrom(const QString& user, const Connection* connection);
+
+public:
+	enum {ID, TIME, CLIENT, EVENT, PARAMETERS};
 
 private:
 	Ui::MainWndClass ui;
 	UserSetting* setting;
 	QSystemTrayIcon* trayIcon;
 	Server server;
-	QMultiHash<QHostAddress, Connection*> peers;
-	QList<QHostAddress> localAddresses;
+	Clients clients;
+	QSqlTableModel modelLogs;
+	QSqlTableModel modelConnections;
 };
 
 class UserSetting : public MySetting<UserSetting>
@@ -65,5 +77,7 @@ public:
 private:
 	void loadDefaults();
 };
+
+int getNextID(const QString& tableName, const QString& sectionName);
 
 #endif // MAINWND_H
