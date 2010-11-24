@@ -1,9 +1,5 @@
 #include "Connection.h"
-
-static const int TransferTimeout = 30 * 1000;
-static const int PongTimeout = 60 * 1000;
-static const int PingInterval = 5 * 1000;
-static const char SeparatorToken = '#';
+#include <QHostAddress>
 
 Connection::Connection(QObject *parent)
 	: QTcpSocket(parent)
@@ -14,54 +10,57 @@ Connection::Connection(QObject *parent)
 	timerId = 0;
 	isGreetingSent = false;
 	pingTimer.setInterval(PingInterval);
+	userName = tr("Unknown");
 
-	connect(this, SIGNAL(readyRead()), this, SLOT(processReadyRead()));
-	connect(this, SIGNAL(connected()), this, SLOT(sendGreetingMessage()));
+	connect(this, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
+	connect(this, SIGNAL(connected()), this, SLOT(sendGreeting()));
 	connect(this, SIGNAL(disconnected()), &pingTimer, SLOT(stop()));
 	connect(&pingTimer, SIGNAL(timeout()), this, SLOT(sendPing()));
 }
 
 Connection::~Connection()
 {
-
 }
 
-void Connection::processReadyRead()
+void Connection::onReadyRead()
 {
 	if(state == WaitingForGreeting)
 	{
-		if (!readHeader())
+		if(!readHeader())
 			return;
-		if (dataType != Greeting) {
+		if(dataType != Greeting)
+		{
 			abort();
 			return;
 		}
 		state = ReadingGreeting;
 	}
 
-	if (state == ReadingGreeting) {
-		if (!hasEnoughData())
+	if(state == ReadingGreeting)
+	{
+		if(!hasEnoughData())
 			return;
 
 		buffer = read(numBytes);
-		if (buffer.size() != numBytes) {
+		if(buffer.size() != numBytes)
+		{
 			abort();
 			return;
 		}
 
-		//username = QString(buffer) + '@' + peerAddress().toString() + ':'
-		//	+ QString::number(peerPort());
+		userName = QString(buffer) + '@' + peerAddress().toString() + ':' + QString::number(peerPort());
 		dataType = Undefined;
 		numBytes = 0;
 		buffer.clear();
 
-		if (!isValid()) {
+		if(!isValid())
+		{
 			abort();
 			return;
 		}
 
-		if (!isGreetingSent)
-			sendGreetingMessage();
+		if(!isGreetingSent)
+			sendGreeting();
 
 		pingTimer.start();
 		pongTime.start();
@@ -69,15 +68,14 @@ void Connection::processReadyRead()
 		emit readyForUse();
 	}
 
-	do {
-		if (dataType == Undefined) {
-			if (!readHeader())
-				return;
-		}
-		if (!hasEnoughData())
+	do
+	{
+		if(dataType == Undefined && !readHeader())
+			return;
+		if(!hasEnoughData())
 			return;
 		processData();
-	} while (bytesAvailable() > 0);
+	} while(bytesAvailable() > 0);
 }
 
 bool Connection::readHeader()
@@ -96,16 +94,9 @@ bool Connection::readHeader()
 		return false;
 	}
 
-	if(buffer.startsWith("PING")) {
-		dataType = Ping;
-	} else if (buffer.startsWith("PONG")) {
-		dataType = Pong;
-	} else if (buffer.startsWith("MESSAGE")) {
-		dataType = PlainText;
-	} else if (buffer.startsWith("GREETING")) {
-		dataType = Greeting;
-	} else {
-		dataType = Undefined;
+	dataType = guessDataType(buffer);
+	if(dataType == Undefined)
+	{
 //		abort();
 		return false;
 	}
@@ -127,10 +118,11 @@ int Connection::readDataIntoBuffer(int maxSize)
 		return 0;
 	}
 
+	// read until separator
 	while(bytesAvailable() > 0 && buffer.size() < maxSize)
 	{
 		buffer.append(read(1));
-		if(buffer.endsWith(SeparatorToken))
+		if(buffer.endsWith('#'))
 			break;
 	}
 
@@ -139,10 +131,10 @@ int Connection::readDataIntoBuffer(int maxSize)
 
 int Connection::getDataLength()
 {
-	if (bytesAvailable() <= 0 || readDataIntoBuffer() <= 0 || !buffer.endsWith(SeparatorToken))
+	if (bytesAvailable() <= 0 || readDataIntoBuffer() <= 0 || !buffer.endsWith('#'))
 		return 0;
 
-	buffer.chop(1);  // chop separator
+	buffer.chop(1);    // chop separator
 	int number = buffer.toInt();
 	buffer.clear();
 	return number;
@@ -150,13 +142,19 @@ int Connection::getDataLength()
 
 void Connection::sendPing()
 {
+	if(pongTime.elapsed() > PongTimeout)
+	{
+		abort();   // peer dead
+		return;
+	}
 
+	write("PING#" + QByteArray::number(1) + '#' + "P");
 }
 
-void Connection::sendGreetingMessage()
+void Connection::sendGreeting()
 {
-	QByteArray greeting = "Hello from server";
-	QByteArray data = "GREETING " + QByteArray::number(greeting.size()) + ' ' + greeting;
+	QByteArray greeting = "Server";
+	QByteArray data = "GREETING#" + QByteArray::number(greeting.size()) + '#' + greeting;
 	if(write(data) == data.size())
 		isGreetingSent = true;
 }
@@ -187,21 +185,22 @@ bool Connection::hasEnoughData()
 void Connection::processData()
 {
 	buffer = read(numBytes);
-	if (buffer.size() != numBytes) {
+	if(buffer.size() != numBytes)
+	{
 		abort();
 		return;
 	}
 
-	switch (dataType)
+	switch(dataType)
 	{
-	case PlainText:
-//		emit newMessage(username, QString::fromUtf8(buffer));
-		break;
 	case Ping:
-		write("PONG");
+		write("PONG#" + QByteArray::number(1) + '#' + "P");
 		break;
 	case Pong:
 		pongTime.restart();
+		break;
+	case Event:
+		emit newMessage(userName, QString::fromUtf8(buffer));
 		break;
 	default:
 		break;
@@ -210,4 +209,17 @@ void Connection::processData()
 	dataType = Undefined;
 	numBytes = 0;
 	buffer.clear();
+}
+
+Connection::DataType Connection::guessDataType(const QByteArray& header)
+{
+	if(header.startsWith("GREETING"))
+		return Greeting;
+	if(header.startsWith("PING"))
+		return Ping;
+	if(header.startsWith("PONG"))
+		return Pong;
+	if(header.startsWith("EVENT"))
+		return Event;
+	return Undefined;
 }

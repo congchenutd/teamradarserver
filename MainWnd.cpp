@@ -4,6 +4,7 @@
 #include <QCloseEvent>
 #include <QMenu>
 #include <QNetworkInterface>
+#include <QSqlQuery>
 
 MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	: QDialog(parent, flags)
@@ -15,30 +16,44 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	setting = UserSetting::getInstance();
 	setCurrentLocalAddress(setting->getIPAddress());
 	ui.sbPort->setValue(setting->getPort());
-	onPortChanged(setting->getPort());
+	onPortChanged(setting->getPort());  // listen
 
-	connect(ui.btClose,    SIGNAL(clicked()),   this, SLOT(onClose()));
-	connect(ui.btShutdown, SIGNAL(clicked()),   this, SLOT(onShutdown()));
-	connect(ui.sbPort,     SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
+	// database
+	modelLogs.setTable("Logs");
+	modelLogs.select();
+	ui.tableView->setModel(&modelLogs);
+	ui.tableView->hideColumn(ID);
+	ui.tableView->sortByColumn(TIME, Qt::DescendingOrder);
+
+	modelConnections.setTable("Connections");
+	modelConnections.select();
+	ui.listView->setModel(&modelConnections);
+	ui.listView->setModelColumn(0);
+
+	QSqlQuery query;
+	query.exec(tr("delete from Connections"));
+
+	connect(ui.sbPort, SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
 	connect(&server, SIGNAL(newConnection(Connection*)), this, SLOT(newConnection(Connection*)));
+	connect(ui.btClear, SIGNAL(clicked()), this, SLOT(onClear()));
 }
 
 MainWnd::~MainWnd()
 {
-
 }
 
 void MainWnd::createTray()
 {
 	QMenu* trayMenu = new QMenu(this);
-	trayMenu->addAction(ui.actionShow);
+	trayMenu->addAction(ui.actionAbout);
 	trayMenu->addAction(ui.actionShutdown);
 
 	trayIcon = new QSystemTrayIcon(this);
 	trayIcon->setIcon(QIcon(":/MainWnd/Images/Server.png"));
 	trayIcon->setContextMenu(trayMenu);
+	trayIcon->show();
 
-	connect(ui.actionShow,     SIGNAL(triggered()), this, SLOT(onShow()));
+	connect(ui.actionAbout,    SIGNAL(triggered()), this, SLOT(onAbout()));
 	connect(ui.actionShutdown, SIGNAL(triggered()), this, SLOT(onShutdown()));
 	connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
 			this, SLOT(onTrayActivated(QSystemTrayIcon::ActivationReason)));
@@ -46,14 +61,8 @@ void MainWnd::createTray()
 
 void MainWnd::closeEvent(QCloseEvent* event)
 {
-	onClose();
-	event->ignore();
-}
-
-void MainWnd::onClose()
-{
-	trayIcon->show();
 	hide();
+	event->ignore();
 }
 
 void MainWnd::onShutdown()
@@ -72,86 +81,69 @@ void MainWnd::onShutdown()
 void MainWnd::onTrayActivated(QSystemTrayIcon::ActivationReason reason)
 {
 	if(reason == QSystemTrayIcon::DoubleClick)
-		onShow();
-}
-
-void MainWnd::onShow()
-{
-	show();
-	trayIcon->hide();
+		show();
 }
 
 void MainWnd::newConnection(Connection* connection)
 {
-//	connection->setGreetingMessage(peerManager->userName());
-
 	connect(connection, SIGNAL(error(QAbstractSocket::SocketError)),
-			this, SLOT(connectionError(QAbstractSocket::SocketError)));
+			this, SLOT(connectionError()));
 	connect(connection, SIGNAL(disconnected()), this, SLOT(disconnected()));
-	connect(connection, SIGNAL(readyForUse()), this, SLOT(readyForUse()));
+	connect(connection, SIGNAL(readyForUse()),  this, SLOT(readyForUse()));
 }
 
-void MainWnd::connectionError(QAbstractSocket::SocketError socketError)
-{
-	if (Connection* connection = qobject_cast<Connection*>(sender()))
+void MainWnd::connectionError() {
+	if(Connection* connection = qobject_cast<Connection*>(sender()))
 		removeConnection(connection);
 }
 
-void MainWnd::disconnected()
-{
-	if (Connection* connection = qobject_cast<Connection*>(sender()))
+void MainWnd::disconnected() {
+	if(Connection* connection = qobject_cast<Connection*>(sender()))
 		removeConnection(connection);
 }
 
 void MainWnd::readyForUse()
 {
 	Connection* connection = qobject_cast<Connection*>(sender());
-	if (!connection || 
-		hasConnection(connection->peerAddress(), connection->peerPort()))
+	if (!connection || hasConnection(connection))
 		return;
 
-	//connect(connection, SIGNAL(newMessage(QString, QString)),
-	//		this, SIGNAL(newMessage(QString, QString)));
+	connect(connection, SIGNAL(newMessage(QString, QString)),
+			this, SLOT(onNewMessage(QString, QString)));
 
-	peers.insert(connection->peerAddress(), connection);
-	//QString nick = connection->name();
-	//if (!nick.isEmpty())
-	//	emit newParticipant(nick);
+	// new client
+	clients.insert(Address(connection->peerAddress().toString(), connection->peerPort()), connection);
+	broadcast(connection->getUserName(), "CONNECTED", "");
+	
+	QSqlQuery query;
+	query.exec(tr("insert into Connections values (\"%1\")").arg(connection->getUserName()));
+	modelConnections.select();
 }
 
 void MainWnd::removeConnection(Connection *connection)
 {
-	if (peers.contains(connection->peerAddress()))
+	if(hasConnection(connection))
 	{
-		peers.remove(connection->peerAddress());
-		//QString nick = connection->name();
-		//if (!nick.isEmpty())
-		//	emit participantLeft(nick);
+		clients.remove(
+			Address(connection->peerAddress().toString(), connection->peerPort()));
+		broadcast(connection->getUserName(), "DISCONNECTED", "");
+
+		QSqlQuery query;
+		query.exec(tr("delete from Connections where Username = \"%1\"").arg(connection->getUserName()));
+		modelConnections.select();
 	}
+
 	connection->deleteLater();
 }
 
-bool MainWnd::hasConnection(const QHostAddress& senderIp, int senderPort) const
+bool MainWnd::hasConnection(const Connection* connection) const
 {
-	if (senderPort == -1)  // no such port
-		return peers.contains(senderIp);
-
-	if (!peers.contains(senderIp))  // no such ip
-		return false;
-
-	// check ip:port
-	QList<Connection*> connections = peers.values(senderIp);
-	foreach (Connection* connection, connections) {
-		if (connection->peerPort() == senderPort)
-			return true;
-	}
-
-	return false;
+	return clients.contains(
+		Address(connection->peerAddress().toString(), connection->peerPort()));
 }
 
 void MainWnd::updateLocalAddresses()
 {
-	localAddresses.clear();
 	ui.cbLocalAddresses->clear();
 	foreach(QNetworkInterface interface, QNetworkInterface::allInterfaces())
 		foreach(QNetworkAddressEntry entry, interface.addressEntries())
@@ -159,10 +151,7 @@ void MainWnd::updateLocalAddresses()
 			QHostAddress address = entry.ip();
 			if(address != QHostAddress::LocalHost && 
 			   address.protocol() == QAbstractSocket::IPv4Protocol)   // exclude 127.0.0.1
-			{
-				localAddresses << address;
 				ui.cbLocalAddresses->addItem(address.toString());
-			}
 		}
 }
 
@@ -181,6 +170,72 @@ void MainWnd::onPortChanged(int port)
 	server.listen(QHostAddress::Any, port);
 }
 
+void MainWnd::onNewMessage(const QString& user, const QString& message)
+{
+	QStringList msgs   = message.split('#');
+	QString event      = msgs.at(0);
+	QString parameters = msgs.at(1);
+	broadcast(user, event, parameters);
+}
+
+void MainWnd::log(const QString& user, const QString& event, const QString& parameters)
+{
+	int lastRow = modelLogs.rowCount();
+	modelLogs.insertRow(lastRow);
+	modelLogs.setData(modelLogs.index(lastRow, ID),         getNextID("Logs", "ID"));
+	modelLogs.setData(modelLogs.index(lastRow, TIME),       QDateTime::currentDateTime().toString(Qt::ISODate));
+	modelLogs.setData(modelLogs.index(lastRow, CLIENT),     user);
+	modelLogs.setData(modelLogs.index(lastRow, EVENT),      event);
+	modelLogs.setData(modelLogs.index(lastRow, PARAMETERS), parameters);
+	modelLogs.submitAll();
+}
+
+void MainWnd::broadcast(const QString& user, const QString& event, const QString& parameters)
+{
+	for(Clients::iterator it = clients.begin(); it != clients.end(); ++it)
+	{
+		if(isFrom(user, it.value()))  // skip the source
+			continue;
+		QString userName = user.split("@").front();
+		QByteArray data = userName.toUtf8() + '#' +	event.toUtf8() + '#' + parameters.toUtf8();
+		it.value()->write("EVENT#" + QByteArray::number(data.size()) + '#' + data);
+	}
+	log(user, event, parameters);
+}
+
+void MainWnd::onClear()
+{
+	if(QMessageBox::warning(this, tr("Warning"), tr("Are you sure to clear the log?"), 
+		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::Yes)
+	{
+		QSqlQuery query;
+		query.exec("delete from Logs");
+		modelLogs.select();
+	}
+}
+
+bool MainWnd::isFrom(const QString& user, const Connection* connection)
+{
+	QString ipPort = user.split("@").at(1);
+	QString ip   = ipPort.split(":").at(0);
+	int     port = ipPort.split(":").at(1).toInt();
+	return connection->peerAddress().toString() == ip && connection->peerPort() == port;
+}
+
+void MainWnd::onAbout() {
+	QMessageBox::about(this, tr("About"), 
+		tr("<H3>TeamRadar Server</H3>"
+		   "<P>Cong Chen</P>"
+		   "<P>2010.11.19</P>"
+		   "<P><a href=mailto:CongChenUTD@Gmail.com>CongChenUTD@Gmail.com</a></P>"));
+}
+
+int getNextID(const QString& tableName, const QString& sectionName)
+{
+	QSqlQuery query;
+	query.exec(QObject::tr("select max(%1) from %2").arg(sectionName).arg(tableName));
+	return query.next() ? query.value(0).toInt() + 1 : 0;
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Setting
