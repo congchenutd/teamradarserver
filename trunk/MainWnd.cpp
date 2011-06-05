@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QNetworkInterface>
 #include <QSqlQuery>
+#include <QFileDialog>
 
 MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	: QDialog(parent, flags)
@@ -35,7 +36,8 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 
 	connect(ui.sbPort, SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
 	connect(&server, SIGNAL(newConnection(Connection*)), this, SLOT(newConnection(Connection*)));
-	connect(ui.btClear, SIGNAL(clicked()), this, SLOT(onClear()));
+	connect(ui.btClear,  SIGNAL(clicked()), this, SLOT(onClear()));
+	connect(ui.btExport, SIGNAL(clicked()), this, SLOT(onExport()));
 }
 
 MainWnd::~MainWnd()
@@ -228,6 +230,25 @@ void MainWnd::onAbout() {
 		   "<P>Cong Chen</P>"
 		   "<P>2010.11.19</P>"
 		   "<P><a href=mailto:CongChenUTD@Gmail.com>CongChenUTD@Gmail.com</a></P>"));
+}
+
+void MainWnd::onExport()
+{
+	QString fileName = QFileDialog::getSaveFileName(this, tr("Export"), "Export.txt", 
+											"Text files (*.txt);;All files (*.*)");
+	if(fileName.isEmpty())
+		return;
+	QFile file(fileName);
+	if(!file.open(QFile::WriteOnly | QFile::Truncate))
+		return;
+	QTextStream os(&file);
+	modelLogs.sort(TIME, Qt::AscendingOrder);
+	for(int i=0; i<modelLogs.rowCount(); ++i)
+		os << modelLogs.data(modelLogs.index(i, TIME)).toString() << "#"
+		   << modelLogs.data(modelLogs.index(i, CLIENT)).toString().split('@').front() << "#"
+		   << modelLogs.data(modelLogs.index(i, EVENT)).toString() << "#"
+		   << modelLogs.data(modelLogs.index(i, PARAMETERS)).toString() << "\r\n";
+	modelLogs.sort(TIME, Qt::DescendingOrder);
 }
 
 int getNextID(const QString& tableName, const QString& sectionName)

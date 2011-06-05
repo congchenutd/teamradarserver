@@ -38,6 +38,7 @@ private slots:
 	void onNewMessage(const QString& user, const QString& message);
 	void onClear();
 	void onAbout();
+	void onExport();
 
 private:
 	void createTray();
