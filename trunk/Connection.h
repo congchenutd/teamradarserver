@@ -6,8 +6,6 @@
 #include <QTime>
 #include <QStringList>
 
-static const int MaxBufferSize = 1024;   // 1KB
-
 class Connection : public QTcpSocket
 {
 	Q_OBJECT
@@ -25,6 +23,7 @@ public:
 		Ping,
 		Pong,
 		Event,
+		Photo,
 	} DataType;
 
 public:
@@ -35,6 +34,7 @@ public:
 signals:
 	void readyForUse();
 	void newMessage(const QString &from, const QString &message);
+	void registerPhoto(const QString& user, const QByteArray& photo);
 
 private slots:
 	void onReadyRead();
@@ -50,6 +50,7 @@ private:
 	DataType guessDataType(const QByteArray& header);
 
 public:
+	static const int  MaxBufferSize   = 1024 * 1024;   // 1KB
 	static const int  TransferTimeout = 30 * 1000;
 	static const int  PongTimeout     = 60 * 1000;
 	static const int  PingInterval    = 10 * 1000;

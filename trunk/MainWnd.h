@@ -31,10 +31,10 @@ private slots:
 	void onShutdown();
 	void onTrayActivated(QSystemTrayIcon::ActivationReason reason);
 	void onPortChanged(int port);
-	void newConnection(Connection* connection);
-	void connectionError();
-	void disconnected();
-	void readyForUse();
+	void onNewConnection(Connection* connection);
+	void onConnectionError();
+	void onDisconnected();
+	void onReadyForUse();
 	void onNewMessage(const QString& user, const QString& message);
 	void onClear();
 	void onAbout();
@@ -42,14 +42,13 @@ private slots:
 
 private:
 	void createTray();
-	void updateLocalAddresses();
+	void updateLocalAddresses();                              // find local IPs
 	void removeConnection(Connection* connection);
-	bool hasConnection(const Connection* connection) const;
+	bool connectionExists(const Connection* connection) const;
 	QString getCurrentLocalAddress() const;
 	void    setCurrentLocalAddress(const QString& address);
 	void log      (const QString& user, const QString& event, const QString& parameters);
 	void broadcast(const QString& user, const QString& event, const QString& parameters);
-	bool isFrom(const QString& user, const Connection* connection);
 
 public:
 	enum {ID, TIME, CLIENT, EVENT, PARAMETERS};
@@ -64,6 +63,8 @@ private:
 	QSqlTableModel modelConnections;
 };
 
+
+//////////////////////////////////////////////////////////////////////////
 class UserSetting : public MySetting<UserSetting>
 {
 public:

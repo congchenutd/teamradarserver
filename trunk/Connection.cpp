@@ -26,7 +26,7 @@ void Connection::onReadyRead()
 {
 	if(state == WaitingForGreeting)
 	{
-		if(!readHeader())
+		if(!readHeader())  // get data type and length
 			return;
 		if(dataType != Greeting)
 		{
@@ -36,9 +36,9 @@ void Connection::onReadyRead()
 		state = ReadingGreeting;
 	}
 
-	if(state == ReadingGreeting)
+	else if(state == ReadingGreeting)
 	{
-		if(!hasEnoughData())
+		if(!hasEnoughData())   // read numBytes bytes of data
 			return;
 
 		buffer = read(numBytes);
@@ -78,6 +78,7 @@ void Connection::onReadyRead()
 	} while(bytesAvailable() > 0);
 }
 
+// read data type and data length
 bool Connection::readHeader()
 {
 	// new timerid
@@ -95,17 +96,15 @@ bool Connection::readHeader()
 	}
 
 	dataType = guessDataType(buffer);
-	if(dataType == Undefined)
-	{
-//		abort();
+	if(dataType == Undefined)   // ignore unknown
 		return false;
-	}
 
 	buffer.clear();
 	numBytes = getDataLength();
 	return true;
 }
 
+// read maxSize bytes into buffer, return # of bytes read
 int Connection::readDataIntoBuffer(int maxSize)
 {
 	if (maxSize > MaxBufferSize)
@@ -155,8 +154,7 @@ void Connection::sendGreeting()
 {
 	QByteArray greeting = "Server";
 	QByteArray data = "GREETING#" + QByteArray::number(greeting.size()) + '#' + greeting;
-	if(write(data) == data.size())
-		isGreetingSent = true;
+	isGreetingSent = (write(data) == data.size());
 }
 
 bool Connection::hasEnoughData()
@@ -202,6 +200,9 @@ void Connection::processData()
 	case Event:
 		emit newMessage(userName, QString::fromUtf8(buffer));
 		break;
+	case Photo:
+		emit registerPhoto(userName, buffer);
+		break;
 	default:
 		break;
 	}
@@ -221,5 +222,7 @@ Connection::DataType Connection::guessDataType(const QByteArray& header)
 		return Pong;
 	if(header.startsWith("EVENT"))
 		return Event;
+	if(header.startsWith("PHOTO"))
+		return Photo;
 	return Undefined;
 }
