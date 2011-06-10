@@ -44,7 +44,7 @@ void Connection::onReadyRead()
 			return;
 		}
 
-		userName = QString(buffer) + '@' + peerAddress().toString() + ':' + QString::number(peerPort());
+		userName = buffer;
 		dataType = Undefined;
 		numBytes = 0;
 		buffer.clear();
@@ -196,8 +196,11 @@ void Connection::processData()
 	case Event:
 		emit newMessage(userName, QString::fromUtf8(buffer));
 		break;
-	case Photo:
+	case RegisterPhoto:
 		emit registerPhoto(userName, buffer);
+		break;
+	case RequestPhoto:
+		emit requestPhoto(userName);
 		break;
 	default:
 		break;
@@ -218,7 +221,11 @@ Connection::DataType Connection::guessDataType(const QByteArray& header)
 		return Pong;
 	if(header.startsWith("EVENT"))
 		return Event;
-	if(header.startsWith("PHOTO"))
-		return Photo;
+	if(header.startsWith("REGISTER_PHOTO"))
+		return RegisterPhoto;
+	if(header.startsWith("REQUEST_PHOTO"))
+		return RequestPhoto;
 	return Undefined;
 }
+
+// http://v.youku.com/v_show/id_XMjMxOTI3NTg4.html

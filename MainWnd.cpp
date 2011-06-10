@@ -243,6 +243,16 @@ void MainWnd::onExport()
 	modelLogs.sort(TIME, Qt::DescendingOrder);
 }
 
+void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
+{
+
+}
+
+void MainWnd::onRequestPhoto(const QString& user)
+{
+
+}
+
 int getNextID(const QString& tableName, const QString& sectionName)
 {
 	QSqlQuery query;
