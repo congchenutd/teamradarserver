@@ -28,7 +28,7 @@ public:
 
 public:
 	Connection(QObject *parent);
-	~Connection();
+	~Connection() {}
 	QString getUserName() const { return userName; }
 
 signals:
