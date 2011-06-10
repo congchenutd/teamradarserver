@@ -18,10 +18,6 @@ Connection::Connection(QObject *parent)
 	connect(&pingTimer, SIGNAL(timeout()), this, SLOT(sendPing()));
 }
 
-Connection::~Connection()
-{
-}
-
 void Connection::onReadyRead()
 {
 	if(state == WaitingForGreeting)
