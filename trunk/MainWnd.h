@@ -39,6 +39,8 @@ private slots:
 	void onClear();
 	void onAbout();
 	void onExport();
+	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
+	void onRequestPhoto (const QString& user);
 
 private:
 	void createTray();

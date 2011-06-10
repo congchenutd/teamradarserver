@@ -23,7 +23,8 @@ public:
 		Ping,
 		Pong,
 		Event,
-		Photo,
+		RegisterPhoto,
+		RequestPhoto
 	} DataType;
 
 public:
@@ -35,6 +36,7 @@ signals:
 	void readyForUse();
 	void newMessage(const QString &from, const QString &message);
 	void registerPhoto(const QString& user, const QByteArray& photo);
+	void requestPhoto (const QString& user);
 
 private slots:
 	void onReadyRead();
