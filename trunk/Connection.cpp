@@ -32,7 +32,7 @@ void Connection::onReadyRead()
 		state = ReadingGreeting;
 	}
 
-	else if(state == ReadingGreeting)
+	if(state == ReadingGreeting)
 	{
 		if(!hasEnoughData())   // read numBytes bytes of data
 			return;
