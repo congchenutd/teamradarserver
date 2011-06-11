@@ -22,7 +22,7 @@ class MainWnd : public QDialog
 
 public:
 	MainWnd(QWidget *parent = 0, Qt::WFlags flags = 0);
-	~MainWnd();
+	~MainWnd() {}
 
 protected:
 	void closeEvent(QCloseEvent* event);

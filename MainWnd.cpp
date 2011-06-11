@@ -41,10 +41,6 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	connect(ui.btExport, SIGNAL(clicked()), this, SLOT(onExport()));
 }
 
-MainWnd::~MainWnd()
-{
-}
-
 void MainWnd::createTray()
 {
 	QMenu* trayMenu = new QMenu(this);
