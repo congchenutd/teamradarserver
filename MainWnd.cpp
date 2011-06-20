@@ -108,6 +108,8 @@ void MainWnd::onReadyForUse()
 
 	connect(connection, SIGNAL(newMessage(QString, QString)),
 			this, SLOT(onNewMessage(QString, QString)));
+	connect(connection, SIGNAL(registerPhoto(QString, QByteArray)),
+			this, SLOT(onRegisterPhoto(QString, QByteArray)));
 
 	// new client
 	clients.insert(Address(connection->peerAddress().toString(), connection->peerPort()), connection);
@@ -122,8 +124,8 @@ void MainWnd::removeConnection(Connection *connection)
 {
 	if(connectionExists(connection))
 	{
-		clients.remove(
-			Address(connection->peerAddress().toString(), connection->peerPort()));
+		clients.remove(Address(connection->peerAddress().toString(), 
+							   connection->peerPort()));
 		broadcast(connection->getUserName(), "DISCONNECTED", "");
 
 		QSqlQuery query;
@@ -241,12 +243,27 @@ void MainWnd::onExport()
 
 void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
 {
+	int seperator = photoData.indexOf('#');
+	if(seperator == -1)
+		return;
 
+	QByteArray suffix   = photoData.left(seperator);
+	QByteArray fileData = photoData.right(photoData.length() - seperator - 1);
+	QFile file(user + "." + suffix);
+	if(file.open(QFile::WriteOnly | QFile::Truncate))
+	{
+		file.write(fileData);
+		log(user, "RegisterPhoto");
+	}
 }
 
-void MainWnd::onRequestPhoto(const QString& user)
+void MainWnd::onRequestPhoto(const QString& targetUser)
 {
+	QFile file(targetUser + ".png");
+	if(file.open(QFile::ReadOnly))
+	{
 
+	}
 }
 
 int getNextID(const QString& tableName, const QString& sectionName)

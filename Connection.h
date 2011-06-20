@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QTime>
 #include <QStringList>
+#include <QSet>
 
 class Connection : public QTcpSocket
 {
@@ -31,17 +32,18 @@ public:
 	Connection(QObject *parent);
 	~Connection() {}
 	QString getUserName() const { return userName; }
+	void sendPhoto(const QString& targetUser);
 
 signals:
 	void readyForUse();
 	void newMessage(const QString &from, const QString &message);
 	void registerPhoto(const QString& user, const QByteArray& photo);
-	void requestPhoto (const QString& user);
+	void requestPhoto (const QString& targetUser);
 
 private slots:
 	void onReadyRead();
 	void sendPing();
-	void sendGreeting();
+	void onDisconnected();
 
 private:
 	bool readHeader();
@@ -50,6 +52,7 @@ private:
 	bool hasEnoughData();
 	void processData();
 	DataType guessDataType(const QByteArray& header);
+	void sendGreeting(const QByteArray& greeting);
 
 public:
 	static const int  MaxBufferSize   = 1024 * 1024;   // 1KB
@@ -67,6 +70,8 @@ private:
 	int             timerId;
 	bool            isGreetingSent;
 	QString         userName;
+
+	static QSet<QString> userNames;
 };
 
 #endif // CONNECTION_H
