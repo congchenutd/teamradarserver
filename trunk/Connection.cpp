@@ -12,10 +12,9 @@ Connection::Connection(QObject *parent)
 	pingTimer.setInterval(PingInterval);
 	userName = tr("Unknown");
 
-	connect(this, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
-	connect(this, SIGNAL(connected()), this, SLOT(sendGreeting()));
-	connect(this, SIGNAL(disconnected()), &pingTimer, SLOT(stop()));
-	connect(&pingTimer, SIGNAL(timeout()), this, SLOT(sendPing()));
+	connect(this,       SIGNAL(readyRead()),    this, SLOT(onReadyRead()));
+	connect(this,       SIGNAL(disconnected()), this, SLOT(onDisconnected()));
+	connect(&pingTimer, SIGNAL(timeout()),      this, SLOT(sendPing()));
 }
 
 void Connection::onReadyRead()
@@ -49,16 +48,24 @@ void Connection::onReadyRead()
 		numBytes = 0;
 		buffer.clear();
 
-		if(!isValid())
+		if(!isValid())   // don't know why
 		{
 			abort();
 			return;
 		}
 
-		if(!isGreetingSent)
-			sendGreeting();
+		if(!userNames.contains(userName))  // check user name
+		{
+			sendGreeting("OK");
+			userNames.insert(userName);
+		}
+		else
+		{
+			sendGreeting("WRONG_USER");
+			return;
+		}
 
-		pingTimer.start();
+		pingTimer.start();                // start heart beating
 		pongTime.start();
 		state = ReadyForUse;
 		emit readyForUse();
@@ -146,9 +153,8 @@ void Connection::sendPing()
 	write("PING#" + QByteArray::number(1) + '#' + "P");
 }
 
-void Connection::sendGreeting()
+void Connection::sendGreeting(const QByteArray& greeting)
 {
-	QByteArray greeting = "Server";
 	QByteArray data = "GREETING#" + QByteArray::number(greeting.size()) + '#' + greeting;
 	isGreetingSent = (write(data) == data.size());
 }
@@ -200,7 +206,7 @@ void Connection::processData()
 		emit registerPhoto(userName, buffer);
 		break;
 	case RequestPhoto:
-		emit requestPhoto(userName);
+		emit requestPhoto(buffer);
 		break;
 	default:
 		break;
@@ -228,4 +234,10 @@ Connection::DataType Connection::guessDataType(const QByteArray& header)
 	return Undefined;
 }
 
-// http://v.youku.com/v_show/id_XMjMxOTI3NTg4.html
+void Connection::onDisconnected()
+{
+	pingTimer.stop();
+	userNames.remove(userName);
+}
+
+QSet<QString> Connection::userNames;

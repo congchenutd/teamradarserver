@@ -40,7 +40,7 @@ private slots:
 	void onAbout();
 	void onExport();
 	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
-	void onRequestPhoto (const QString& user);
+	void onRequestPhoto (const QString& targetUser);
 
 private:
 	void createTray();
@@ -49,8 +49,8 @@ private:
 	bool connectionExists(const Connection* connection) const;
 	QString getCurrentLocalAddress() const;
 	void    setCurrentLocalAddress(const QString& address);
-	void log      (const QString& user, const QString& event, const QString& parameters);
-	void broadcast(const QString& user, const QString& event, const QString& parameters);
+	void log      (const QString& user, const QString& event, const QString& parameters = QString());
+	void broadcast(const QString& user, const QString& event, const QString& parameters = QString());
 
 public:
 	enum {ID, TIME, CLIENT, EVENT, PARAMETERS};
