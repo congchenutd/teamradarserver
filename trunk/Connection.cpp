@@ -208,6 +208,8 @@ void Connection::processData()
 	case RequestPhoto:
 		emit requestPhoto(buffer);
 		break;
+	case RequestUserList:
+		emit requestUserList();
 	default:
 		break;
 	}
@@ -231,6 +233,8 @@ Connection::DataType Connection::guessDataType(const QByteArray& header)
 		return RegisterPhoto;
 	if(header.startsWith("REQUEST_PHOTO"))
 		return RequestPhoto;
+	if(header.startsWith("REQUEST_USERLIST"))
+		return RequestUserList;
 	return Undefined;
 }
 

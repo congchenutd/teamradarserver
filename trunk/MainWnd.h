@@ -41,6 +41,7 @@ private slots:
 	void onExport();
 	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
 	void onRequestPhoto (const QString& targetUser);
+	void onRequestUserList();
 
 private:
 	void createTray();

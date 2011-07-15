@@ -66,15 +66,11 @@ void MainWnd::closeEvent(QCloseEvent* event)
 
 void MainWnd::onShutdown()
 {
-	if(QMessageBox::warning(this, tr("Warning"), tr("Really shutdown the server?"), 
-		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::Yes)
-	{
-		trayIcon->hide();
-		setting->setIPAddress(getCurrentLocalAddress());  // save setting
-		setting->setPort(ui.sbPort->value());
-		UserSetting::destroySettingManager();
-		qApp->quit();
-	}
+	trayIcon->hide();
+	setting->setIPAddress(getCurrentLocalAddress());  // save setting
+	setting->setPort(ui.sbPort->value());
+	UserSetting::destroySettingManager();
+	qApp->quit();
 }
 
 void MainWnd::onTrayActivated(QSystemTrayIcon::ActivationReason reason) {
@@ -259,11 +255,28 @@ void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
 
 void MainWnd::onRequestPhoto(const QString& targetUser)
 {
-	QFile file(targetUser + ".png");
+	QString fileName = targetUser + ".png";
+	QFile file(fileName);
 	if(file.open(QFile::ReadOnly))
 	{
-
+		Connection* connection = qobject_cast<Connection*>(sender());
+		QByteArray data = file.readAll();
+		connection->write("PHOTO_RESPONSE#" + 
+						  QByteArray::number(data.size() + fileName.length()) + "#" + 
+						  fileName.toUtf8() + "#" + data);
 	}
+}
+
+void MainWnd::onRequestUserList()
+{
+	QStringList users;
+	foreach(Connection* connection, clients)
+		users << connection->getUserName();
+
+	QString userList = users.join(";");
+	Connection* connection = qobject_cast<Connection*>(sender());
+	connection->write("USERLIST_RESPONSE#" + 
+					  QByteArray::number(userList.length()) + "#" + userList.toUtf8());
 }
 
 int getNextID(const QString& tableName, const QString& sectionName)
@@ -283,7 +296,7 @@ UserSetting::UserSetting(const QString& fileName) : MySetting<UserSetting>(fileN
 
 void UserSetting::loadDefaults()
 {
-	setIPAddress("0.0.0.0");
+	setIPAddress("127.0.0.1");
 	setPort(12345);
 }
 
