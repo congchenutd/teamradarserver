@@ -106,6 +106,8 @@ void MainWnd::onReadyForUse()
 			this, SLOT(onNewMessage(QString, QString)));
 	connect(connection, SIGNAL(registerPhoto(QString, QByteArray)),
 			this, SLOT(onRegisterPhoto(QString, QByteArray)));
+	connect(connection, SIGNAL(requestUserList()),     this, SLOT(onRequestUserList()));
+	connect(connection, SIGNAL(requestPhoto(QString)), this, SLOT(onRequestPhoto(QString)));
 
 	// new client
 	clients.insert(Address(connection->peerAddress().toString(), connection->peerPort()), connection);
@@ -257,13 +259,19 @@ void MainWnd::onRequestPhoto(const QString& targetUser)
 {
 	QString fileName = targetUser + ".png";
 	QFile file(fileName);
+	Connection* connection = qobject_cast<Connection*>(sender());
 	if(file.open(QFile::ReadOnly))
 	{
-		Connection* connection = qobject_cast<Connection*>(sender());
 		QByteArray data = file.readAll();
 		connection->write("PHOTO_RESPONSE#" + 
 						  QByteArray::number(data.size() + fileName.length()) + "#" + 
 						  fileName.toUtf8() + "#" + data);
+		log(connection->getUserName(), "Request photo of " + targetUser);
+	}
+	else
+	{
+		connection->write("PHOTO_RESPONSE#" + QByteArray::number(0) + "#");
+		log(connection->getUserName(), "Failed: Request photo of " + targetUser);
 	}
 }
 
@@ -277,6 +285,7 @@ void MainWnd::onRequestUserList()
 	Connection* connection = qobject_cast<Connection*>(sender());
 	connection->write("USERLIST_RESPONSE#" + 
 					  QByteArray::number(userList.length()) + "#" + userList.toUtf8());
+	log(connection->getUserName(), "Request user list");
 }
 
 int getNextID(const QString& tableName, const QString& sectionName)
