@@ -210,6 +210,7 @@ void Connection::processData()
 		break;
 	case RequestUserList:
 		emit requestUserList();
+		break;
 	default:
 		break;
 	}
