@@ -192,11 +192,12 @@ void MainWnd::broadcast(const QString& user, const QString& event, const QString
 {
 	for(Clients::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
-		if(it.value()->getUserName() == user)  // skip the source
+		Connection* connection = it.value();
+		if(connection->getUserName() == user)  // skip the source
 			continue;
 		QString userName = user.split("@").front();
 		QByteArray data = userName.toUtf8() + '#' +	event.toUtf8() + '#' + parameters.toUtf8();
-		it.value()->write("EVENT#" + QByteArray::number(data.size()) + '#' + data);
+		connection->write(event.toUtf8() + '#' + QByteArray::number(data.size()) + '#' + data);
 	}
 	log(user, event, parameters);
 }

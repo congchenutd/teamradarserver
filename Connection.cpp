@@ -56,7 +56,7 @@ void Connection::onReadyRead()
 
 		if(!userNames.contains(userName))  // check user name
 		{
-			sendGreeting("OK");
+			sendGreeting("OK, CONNECTED");
 			userNames.insert(userName);
 		}
 		else
