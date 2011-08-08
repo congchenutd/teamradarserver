@@ -196,8 +196,7 @@ void MainWnd::broadcast(const QString& user, const QString& event, const QString
 		if(connection->getUserName() == user)  // skip the source
 			continue;
 		QString userName = user.split("@").front();
-		QByteArray data = userName.toUtf8() + '#' +	event.toUtf8() + '#' + parameters.toUtf8();
-		connection->write(event.toUtf8() + '#' + QByteArray::number(data.size()) + '#' + data);
+		connection->send(event, QStringList() << userName << event << parameters);
 	}
 	log(user, event, parameters);
 }
@@ -263,15 +262,13 @@ void MainWnd::onRequestPhoto(const QString& targetUser)
 	Connection* connection = qobject_cast<Connection*>(sender());
 	if(file.open(QFile::ReadOnly))
 	{
-		QByteArray data = file.readAll();
-		connection->write("PHOTO_RESPONSE#" + 
-						  QByteArray::number(data.size() + fileName.length()) + "#" + 
-						  fileName.toUtf8() + "#" + data);
+		QByteArray photoData = file.readAll();
+		connection->send("PHOTO_RESPONSE#", QStringList() << fileName << photoData);
 		log(connection->getUserName(), "Request photo of " + targetUser);
 	}
 	else
 	{
-		connection->write("PHOTO_RESPONSE#" + QByteArray::number(0) + "#");
+		connection->send("PHOTO_RESPONSE#");
 		log(connection->getUserName(), "Failed: Request photo of " + targetUser);
 	}
 }

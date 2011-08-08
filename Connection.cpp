@@ -8,7 +8,6 @@ Connection::Connection(QObject *parent)
 	dataType = Undefined;
 	numBytes = -1;
 	timerId = 0;
-	isGreetingSent = false;
 	pingTimer.setInterval(PingInterval);
 	userName = tr("Unknown");
 
@@ -56,17 +55,17 @@ void Connection::onReadyRead()
 
 		if(!userNames.contains(userName))  // check user name
 		{
-			sendGreeting("OK, CONNECTED");
+			send("GREETING", "OK, CONNECTED");
 			userNames.insert(userName);
 		}
 		else
 		{
-			sendGreeting("WRONG_USER");
+			send("GREETING", "WRONG_USER");
 			return;
 		}
 
-		pingTimer.start();                // start heart beating
-		pongTime.start();
+		//pingTimer.start();                // start heart beating
+		//pongTime.start();
 		state = ReadyForUse;
 		emit readyForUse();
 	}
@@ -144,19 +143,13 @@ int Connection::getDataLength()
 
 void Connection::sendPing()
 {
-	if(pongTime.elapsed() > PongTimeout)
-	{
-		abort();   // peer dead
-		return;
-	}
+	//if(pongTime.elapsed() > PongTimeout)
+	//{
+	//	abort();   // peer dead
+	//	return;
+	//}
 
-	write("PING#" + QByteArray::number(1) + '#' + "P");
-}
-
-void Connection::sendGreeting(const QByteArray& greeting)
-{
-	QByteArray data = "GREETING#" + QByteArray::number(greeting.size()) + '#' + greeting;
-	isGreetingSent = (write(data) == data.size());
+	send("PING");
 }
 
 bool Connection::hasEnoughData()
@@ -194,7 +187,7 @@ void Connection::processData()
 	switch(dataType)
 	{
 	case Ping:
-		write("PONG#" + QByteArray::number(1) + '#' + "P");
+		send("PONG");
 		break;
 	case Pong:
 		pongTime.restart();
@@ -246,3 +239,13 @@ void Connection::onDisconnected()
 }
 
 QSet<QString> Connection::userNames;
+
+void Connection::send(const QString& header, const QString& body) {
+	write(header.toUtf8() + '#' + 
+		QByteArray::number(body.length()) + '#' + 
+		body.toUtf8());
+}
+
+void Connection::send(const QString& header, const QStringList& bodies) {
+	send(header, bodies.join("#"));
+}
