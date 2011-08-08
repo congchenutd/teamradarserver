@@ -34,6 +34,8 @@ public:
 	~Connection() {}
 	QString getUserName() const { return userName; }
 	void sendPhoto(const QString& targetUser);
+	void send(const QString& header, const QString& body = QString("P"));
+	void send(const QString& header, const QStringList& bodies);
 
 signals:
 	void readyForUse();
@@ -54,12 +56,11 @@ private:
 	bool hasEnoughData();
 	void processData();
 	DataType guessDataType(const QByteArray& header);
-	void sendGreeting(const QByteArray& greeting);
 
 public:
 	static const int  MaxBufferSize   = 1024 * 1024;   // 1KB
 	static const int  TransferTimeout = 30 * 1000;
-	static const int  PongTimeout     = 120 * 1000;
+	static const int  PongTimeout     = 60 * 1000;
 	static const int  PingInterval    = 10 * 1000;
 
 private:
@@ -70,7 +71,6 @@ private:
 	QByteArray      buffer;
 	int             numBytes;
 	int             timerId;
-	bool            isGreetingSent;
 	QString         userName;
 
 	static QSet<QString> userNames;
