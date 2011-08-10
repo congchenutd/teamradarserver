@@ -2,8 +2,7 @@
 #include "Connection.h"
 
 Server::Server(QObject* parent) : QTcpServer(parent)
-{
-}
+{}
 
 void Server::incomingConnection(int socketDescriptor)
 {

@@ -102,16 +102,16 @@ void MainWnd::onReadyForUse()
 	if(!connection || connectionExists(connection))
 		return;
 
-	connect(connection, SIGNAL(newMessage(QString, QString)),
-			this, SLOT(onNewMessage(QString, QString)));
-	connect(connection, SIGNAL(registerPhoto(QString, QByteArray)),
-			this, SLOT(onRegisterPhoto(QString, QByteArray)));
+	connect(connection, SIGNAL(newMessage(QString, QByteArray)),
+			this, SLOT(onNewMessage(QString, QByteArray)));
+	connect(connection, SIGNAL(registerPhoto(QByteArray, QByteArray)),
+			this, SLOT(onRegisterPhoto(QByteArray, QByteArray)));
 	connect(connection, SIGNAL(requestUserList()),     this, SLOT(onRequestUserList()));
-	connect(connection, SIGNAL(requestPhoto(QString)), this, SLOT(onRequestPhoto(QString)));
+	connect(connection, SIGNAL(requestPhoto(QByteArray)), this, SLOT(onRequestPhoto(QByteArray)));
 
 	// new client
 	clients.insert(Address(connection->peerAddress().toString(), connection->peerPort()), connection);
-	broadcast(connection->getUserName(), "CONNECTED", "");
+	broadcast(connection->getUserName().toUtf8(), "CONNECTED", "");
 	
 	QSqlQuery query;
 	query.exec(tr("insert into Connections values (\"%1\")").arg(connection->getUserName()));
@@ -168,15 +168,14 @@ void MainWnd::onPortChanged(int port)
 	server.listen(QHostAddress::Any, port);
 }
 
-void MainWnd::onNewMessage(const QString& user, const QString& message)
+void MainWnd::onNewMessage(const QString& user, const QByteArray& message)
 {
-	QStringList msgs   = message.split('#');
-	QString event      = msgs.at(0);
-	QString parameters = msgs.at(1);
+	QByteArray event      = message.split('#').at(0);
+	QByteArray parameters = message.split('#').at(1);
 	broadcast(user, event, parameters);
 }
 
-void MainWnd::log(const QString& user, const QString& event, const QString& parameters)
+void MainWnd::log(const QString& user, const QByteArray& event, const QString& parameters)
 {
 	int lastRow = modelLogs.rowCount();
 	modelLogs.insertRow(lastRow);
@@ -188,15 +187,15 @@ void MainWnd::log(const QString& user, const QString& event, const QString& para
 	modelLogs.submitAll();
 }
 
-void MainWnd::broadcast(const QString& user, const QString& event, const QString& parameters)
+void MainWnd::broadcast(const QString& user, const QByteArray& event, const QByteArray& parameters)
 {
 	for(Clients::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		Connection* connection = it.value();
 		if(connection->getUserName() == user)  // skip the source
 			continue;
-		QString userName = user.split("@").front();
-		connection->send(event, QStringList() << userName << event << parameters);
+		QByteArray userName = user.split("@").front().toUtf8();
+		connection->send("EVENT", QList<QByteArray>() << userName << event << parameters);
 	}
 	log(user, event, parameters);
 }
@@ -216,7 +215,7 @@ void MainWnd::onAbout() {
 	QMessageBox::about(this, tr("About"), 
 		tr("<H3>TeamRadar Server</H3>"
 		   "<P>Cong Chen</P>"
-		   "<P>2010.11.19</P>"
+		   "<P>2011.8.10</P>"
 		   "<P><a href=mailto:CongChenUTD@Gmail.com>CongChenUTD@Gmail.com</a></P>"));
 }
 
@@ -255,7 +254,7 @@ void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
 	}
 }
 
-void MainWnd::onRequestPhoto(const QString& targetUser)
+void MainWnd::onRequestPhoto(const QByteArray& targetUser)
 {
 	QString fileName = targetUser + ".png";
 	QFile file(fileName);
@@ -263,12 +262,12 @@ void MainWnd::onRequestPhoto(const QString& targetUser)
 	if(file.open(QFile::ReadOnly))
 	{
 		QByteArray photoData = file.readAll();
-		connection->send("PHOTO_RESPONSE#", QStringList() << fileName << photoData);
+		connection->send("PHOTO_RESPONSE", QList<QByteArray>() << fileName.toUtf8() << photoData);
 		log(connection->getUserName(), "Request photo of " + targetUser);
 	}
 	else
 	{
-		connection->send("PHOTO_RESPONSE#");
+		connection->send("PHOTO_RESPONSE");
 		log(connection->getUserName(), "Failed: Request photo of " + targetUser);
 	}
 }

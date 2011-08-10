@@ -1,6 +1,8 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+// Listen, and create new Connections
+
 #include <QTcpServer>
 
 class Connection;

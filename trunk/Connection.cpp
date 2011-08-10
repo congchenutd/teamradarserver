@@ -1,5 +1,6 @@
 #include "Connection.h"
 #include <QHostAddress>
+#include <QTimerEvent>
 
 Connection::Connection(QObject *parent)
 	: QTcpSocket(parent)
@@ -7,13 +8,23 @@ Connection::Connection(QObject *parent)
 	state = WaitingForGreeting;
 	dataType = Undefined;
 	numBytes = -1;
-	timerId = 0;
-	pingTimer.setInterval(PingInterval);
+	transferTimerID = 0;
+//	pingTimer.setInterval(PingInterval);
 	userName = tr("Unknown");
 
 	connect(this,       SIGNAL(readyRead()),    this, SLOT(onReadyRead()));
 	connect(this,       SIGNAL(disconnected()), this, SLOT(onDisconnected()));
 	connect(&pingTimer, SIGNAL(timeout()),      this, SLOT(sendPing()));
+}
+
+// transfer time out
+void Connection::timerEvent(QTimerEvent* timerEvent)
+{
+	if (timerEvent->timerId() == transferTimerID) {
+		abort();
+		killTimer(transferTimerID);
+		transferTimerID = 0;
+	}
 }
 
 void Connection::onReadyRead()
@@ -72,9 +83,9 @@ void Connection::onReadyRead()
 
 	do
 	{
-		if(dataType == Undefined && !readHeader())
+		if(dataType == Undefined && !readHeader())  // read header, size
 			return;
-		if(!hasEnoughData())
+		if(!hasEnoughData())                        // wait data
 			return;
 		processData();
 	} while(bytesAvailable() > 0);
@@ -83,30 +94,33 @@ void Connection::onReadyRead()
 // read data type and data length
 bool Connection::readHeader()
 {
-	// new timerid
-	if(timerId)
+	// reset timer
+	if(transferTimerID)
 	{
-		killTimer(timerId);
-		timerId = 0;
+		killTimer(transferTimerID);
+		transferTimerID = 0;
 	}
 
 	// read header data
 	if(readDataIntoBuffer() <= 0)
 	{
-		timerId = startTimer(TransferTimeout);
+		transferTimerID = startTimer(TransferTimeout);
 		return false;
 	}
 
 	dataType = guessDataType(buffer);
 	if(dataType == Undefined)   // ignore unknown
+	{
+		buffer.clear();
 		return false;
+	}
 
 	buffer.clear();
 	numBytes = getDataLength();
 	return true;
 }
 
-// read maxSize bytes into buffer, return # of bytes read
+// read until '#' into buffer, return # of bytes read
 int Connection::readDataIntoBuffer(int maxSize)
 {
 	if (maxSize > MaxBufferSize)
@@ -154,11 +168,11 @@ void Connection::sendPing()
 
 bool Connection::hasEnoughData()
 {
-	// new timerid
-	if(timerId)
+	// reset timer
+	if(transferTimerID)
 	{
-		QObject::killTimer(timerId);
-		timerId = 0;
+		QObject::killTimer(transferTimerID);
+		transferTimerID = 0;
 	}
 
 	// get length
@@ -168,7 +182,7 @@ bool Connection::hasEnoughData()
 	// wait for data
 	if(bytesAvailable() < numBytes || numBytes <= 0)
 	{
-		timerId = startTimer(TransferTimeout);
+		transferTimerID = startTimer(TransferTimeout);
 		return false;
 	}
 
@@ -193,7 +207,7 @@ void Connection::processData()
 		pongTime.restart();
 		break;
 	case Event:
-		emit newMessage(userName, QString::fromUtf8(buffer));
+		emit newMessage(userName, buffer);
 		break;
 	case RegisterPhoto:
 		emit registerPhoto(userName, buffer);
@@ -240,12 +254,20 @@ void Connection::onDisconnected()
 
 QSet<QString> Connection::userNames;
 
-void Connection::send(const QString& header, const QString& body) {
-	write(header.toUtf8() + '#' + 
-		QByteArray::number(body.length()) + '#' + 
-		body.toUtf8());
+void Connection::send(const QByteArray& header, const QByteArray& body)
+{
+	QByteArray message(header);
+	if(!header.endsWith("#"))
+		message.append("#");
+	message.append(QByteArray::number(body.length()) + '#' + body);
+	write(message);
 }
 
-void Connection::send(const QString& header, const QStringList& bodies) {
-	send(header, bodies.join("#"));
+void Connection::send(const QByteArray& header, const QList<QByteArray>& bodies)
+{
+	QByteArray joined;
+	foreach(QByteArray body, bodies)
+		joined.append(body + "#");
+	joined.chop(1);
+	send(header, joined);
 }
