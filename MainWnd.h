@@ -35,12 +35,12 @@ private slots:
 	void onConnectionError();
 	void onDisconnected();
 	void onReadyForUse();
-	void onNewMessage(const QString& user, const QString& message);
+	void onNewMessage(const QString& user, const QByteArray& message);
 	void onClear();
 	void onAbout();
 	void onExport();
 	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
-	void onRequestPhoto (const QString& targetUser);
+	void onRequestPhoto (const QByteArray& targetUser);
 	void onRequestUserList();
 
 private:
@@ -50,8 +50,8 @@ private:
 	bool connectionExists(const Connection* connection) const;
 	QString getCurrentLocalAddress() const;
 	void    setCurrentLocalAddress(const QString& address);
-	void log      (const QString& user, const QString& event, const QString& parameters = QString());
-	void broadcast(const QString& user, const QString& event, const QString& parameters = QString());
+	void log      (const QString& user, const QByteArray& event, const QString& parameters = QString());
+	void broadcast(const QString& user, const QByteArray& event, const QByteArray& parameters = QByteArray());
 
 public:
 	enum {ID, TIME, CLIENT, EVENT, PARAMETERS};

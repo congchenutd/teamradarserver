@@ -1,6 +1,8 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
+// One Connection for each client
+
 #include <QTcpSocket>
 #include <QTimer>
 #include <QTime>
@@ -31,22 +33,23 @@ public:
 
 public:
 	Connection(QObject *parent);
-	~Connection() {}
 	QString getUserName() const { return userName; }
-	void sendPhoto(const QString& targetUser);
-	void send(const QString& header, const QString& body = QString("P"));
-	void send(const QString& header, const QStringList& bodies);
+	void send(const QByteArray& header, const QByteArray& body = QByteArray("P"));
+	void send(const QByteArray& header, const QList<QByteArray>& bodies);
+
+protected:
+	void timerEvent(QTimerEvent* timerEvent);
 
 signals:
 	void readyForUse();
-	void newMessage(const QString &from, const QString &message);
+	void newMessage(const QString& from, const QByteArray& message);
 	void registerPhoto(const QString& user, const QByteArray& photo);
-	void requestPhoto (const QString& targetUser);
+	void requestPhoto (const QByteArray& targetUser);
 	void requestUserList();
 
 private slots:
-	void onReadyRead();
 	void sendPing();
+	void onReadyRead();    // data coming
 	void onDisconnected();
 
 private:
@@ -70,7 +73,7 @@ private:
 	DataType        dataType;
 	QByteArray      buffer;
 	int             numBytes;
-	int             timerId;
+	int             transferTimerID;
 	QString         userName;
 
 	static QSet<QString> userNames;
