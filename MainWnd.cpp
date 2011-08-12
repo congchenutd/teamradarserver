@@ -274,14 +274,12 @@ void MainWnd::onRequestPhoto(const QByteArray& targetUser)
 
 void MainWnd::onRequestUserList()
 {
-	QStringList users;
+	QList<QByteArray> users;
 	foreach(Connection* connection, clients)
-		users << connection->getUserName();
+		users << connection->getUserName().toUtf8();
 
-	QString userList = users.join(";");
 	Connection* connection = qobject_cast<Connection*>(sender());
-	connection->write("USERLIST_RESPONSE#" + 
-					  QByteArray::number(userList.length()) + "#" + userList.toUtf8());
+	connection->send("USERLIST_RESPONSE", users);
 	log(connection->getUserName(), "Request user list");
 }
 
