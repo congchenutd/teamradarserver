@@ -6,15 +6,14 @@ Connection::Connection(QObject *parent)
 	: QTcpSocket(parent)
 {
 	state = WaitingForGreeting;
-	dataType = Undefined;
+	dataType = Receiver::Undefined;
 	numBytes = -1;
 	transferTimerID = 0;
-//	pingTimer.setInterval(PingInterval);
 	userName = tr("Unknown");
+	receiver = new Receiver(this);
 
-	connect(this,       SIGNAL(readyRead()),    this, SLOT(onReadyRead()));
-	connect(this,       SIGNAL(disconnected()), this, SLOT(onDisconnected()));
-	connect(&pingTimer, SIGNAL(timeout()),      this, SLOT(sendPing()));
+	connect(this, SIGNAL(readyRead()),    this, SLOT(onReadyRead()));
+	connect(this, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
 }
 
 // transfer time out
@@ -33,7 +32,7 @@ void Connection::onReadyRead()
 	{
 		if(!readHeader())  // get data type and length
 			return;
-		if(dataType != Greeting)
+		if(dataType != Receiver::Greeting)
 		{
 			abort();
 			return;
@@ -54,7 +53,7 @@ void Connection::onReadyRead()
 		}
 
 		userName = buffer;
-		dataType = Undefined;
+		dataType = Receiver::Undefined;
 		numBytes = 0;
 		buffer.clear();
 
@@ -75,15 +74,13 @@ void Connection::onReadyRead()
 			return;
 		}
 
-		//pingTimer.start();                // start heart beating
-		//pongTime.start();
 		state = ReadyForUse;
 		emit readyForUse();
 	}
 
 	do
 	{
-		if(dataType == Undefined && !readHeader())  // read header, size
+		if(dataType == Receiver::Undefined && !readHeader())  // read header, size
 			return;
 		if(!hasEnoughData())                        // wait data
 			return;
@@ -108,8 +105,8 @@ bool Connection::readHeader()
 		return false;
 	}
 
-	dataType = guessDataType(buffer);
-	if(dataType == Undefined)   // ignore unknown
+	dataType = receiver->guessDataType(buffer);
+	if(dataType == Receiver::Undefined)   // ignore unknown
 	{
 		buffer.clear();
 		return false;
@@ -155,17 +152,6 @@ int Connection::getDataLength()
 	return number;
 }
 
-void Connection::sendPing()
-{
-	//if(pongTime.elapsed() > PongTimeout)
-	//{
-	//	abort();   // peer dead
-	//	return;
-	//}
-
-	send("PING");
-}
-
 bool Connection::hasEnoughData()
 {
 	// reset timer
@@ -198,57 +184,14 @@ void Connection::processData()
 		return;
 	}
 
-	switch(dataType)
-	{
-	case Ping:
-		send("PONG");
-		break;
-	case Pong:
-		pongTime.restart();
-		break;
-	case Event:
-		emit newMessage(userName, buffer);
-		break;
-	case RegisterPhoto:
-		emit registerPhoto(userName, buffer);
-		break;
-	case RequestPhoto:
-		emit requestPhoto(buffer);
-		break;
-	case RequestUserList:
-		emit requestUserList();
-		break;
-	default:
-		break;
-	}
+	receiver->processData(dataType, buffer);
 
-	dataType = Undefined;
+	dataType = Receiver::Undefined;
 	numBytes = 0;
 	buffer.clear();
 }
 
-Connection::DataType Connection::guessDataType(const QByteArray& header)
-{
-	if(header.startsWith("GREETING"))
-		return Greeting;
-	if(header.startsWith("PING"))
-		return Ping;
-	if(header.startsWith("PONG"))
-		return Pong;
-	if(header.startsWith("EVENT"))
-		return Event;
-	if(header.startsWith("REGISTER_PHOTO"))
-		return RegisterPhoto;
-	if(header.startsWith("REQUEST_PHOTO"))
-		return RequestPhoto;
-	if(header.startsWith("REQUEST_USERLIST"))
-		return RequestUserList;
-	return Undefined;
-}
-
-void Connection::onDisconnected()
-{
-	pingTimer.stop();
+void Connection::onDisconnected() {
 	userNames.remove(userName);
 }
 
@@ -270,4 +213,46 @@ void Connection::send(const QByteArray& header, const QList<QByteArray>& bodies)
 		joined.append(body + "#");
 	joined.chop(1);
 	send(header, joined);
+}
+
+//////////////////////////////////////////////////////////////////////////
+Receiver::DataType Receiver::guessDataType(const QByteArray& header)
+{
+	if(header.startsWith("GREETING"))
+		return Greeting;
+	if(header.startsWith("EVENT"))
+		return Event;
+	if(header.startsWith("REGISTER_PHOTO"))
+		return RegisterPhoto;
+	if(header.startsWith("REQUEST_PHOTO"))
+		return RequestPhoto;
+	if(header.startsWith("REQUEST_USERLIST"))
+		return RequestUserList;
+	return Undefined;
+}
+
+void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer)
+{
+	QString userName = connection->getUserName();
+	switch(dataType)
+	{
+	case Event:
+		emit newMessage(userName, buffer);
+		break;
+	case RegisterPhoto:
+		emit registerPhoto(userName, buffer);
+		break;
+	case RequestPhoto:
+		emit requestPhoto(buffer);
+		break;
+	case RequestUserList:
+		emit requestUserList();
+		break;
+	default:
+		break;
+	}
+}
+
+Receiver::Receiver(Connection* c) {
+	connection = c;
 }

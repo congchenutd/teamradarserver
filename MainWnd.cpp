@@ -102,12 +102,11 @@ void MainWnd::onReadyForUse()
 	if(!connection || connectionExists(connection))
 		return;
 
-	connect(connection, SIGNAL(newMessage(QString, QByteArray)),
-			this, SLOT(onNewMessage(QString, QByteArray)));
-	connect(connection, SIGNAL(registerPhoto(QByteArray, QByteArray)),
-			this, SLOT(onRegisterPhoto(QByteArray, QByteArray)));
-	connect(connection, SIGNAL(requestUserList()),     this, SLOT(onRequestUserList()));
-	connect(connection, SIGNAL(requestPhoto(QByteArray)), this, SLOT(onRequestPhoto(QByteArray)));
+	Receiver* receiver = connection->getReceiver();
+	connect(receiver, SIGNAL(newMessage(QString, QByteArray)),	     this, SLOT(onNewMessage(QString, QByteArray)));
+	connect(receiver, SIGNAL(registerPhoto(QByteArray, QByteArray)), this, SLOT(onRegisterPhoto(QByteArray, QByteArray)));
+	connect(receiver, SIGNAL(requestUserList()),                     this, SLOT(onRequestUserList()));
+	connect(receiver, SIGNAL(requestPhoto(QByteArray)),              this, SLOT(onRequestPhoto(QByteArray)));
 
 	// new client
 	clients.insert(Address(connection->peerAddress().toString(), connection->peerPort()), connection);
