@@ -193,8 +193,8 @@ void MainWnd::broadcast(const QString& user, const QByteArray& event, const QByt
 		Connection* connection = it.value();
 		if(connection->getUserName() == user)  // skip the source
 			continue;
-		QByteArray userName = user.split("@").front().toUtf8();
-		connection->send("EVENT", QList<QByteArray>() << userName << event << parameters);
+		QString userName = user.split("@").front();
+		connection->getSender()->sendEvent(userName, event, parameters);
 	}
 	log(user, event, parameters);
 }
@@ -257,17 +257,17 @@ void MainWnd::onRequestPhoto(const QByteArray& targetUser)
 {
 	QString fileName = targetUser + ".png";
 	QFile file(fileName);
-	Connection* connection = qobject_cast<Connection*>(sender());
+	Receiver* receiver = qobject_cast<Receiver*>(sender());
 	if(file.open(QFile::ReadOnly))
 	{
 		QByteArray photoData = file.readAll();
-		connection->send("PHOTO_RESPONSE", QList<QByteArray>() << fileName.toUtf8() << photoData);
-		log(connection->getUserName(), "Request photo of " + targetUser);
+		receiver->getSender()->sendPhotoResponse(fileName, photoData);
+		log(receiver->getUserName(), "Request photo of " + targetUser);
 	}
 	else
 	{
-		connection->send("PHOTO_RESPONSE");
-		log(connection->getUserName(), "Failed: Request photo of " + targetUser);
+		receiver->getSender()->sendPhotoResponse(QString(), QByteArray());
+		log(receiver->getUserName(), "Failed: Request photo of " + targetUser);
 	}
 }
 
@@ -277,9 +277,9 @@ void MainWnd::onRequestUserList()
 	foreach(Connection* connection, clients)
 		users << connection->getUserName().toUtf8();
 
-	Connection* connection = qobject_cast<Connection*>(sender());
-	connection->send("USERLIST_RESPONSE", users);
-	log(connection->getUserName(), "Request user list");
+	Receiver* receiver = qobject_cast<Receiver*>(sender());
+	receiver->getSender()->sendUserListResponse(users);
+	log(receiver->getUserName(), "Request user list");
 }
 
 int getNextID(const QString& tableName, const QString& sectionName)

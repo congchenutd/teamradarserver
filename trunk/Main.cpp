@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
 	createTables();
 
 	QApplication app(argc, argv);
+	app.setQuitOnLastWindowClosed(false);
 	MainWnd wnd;
 	wnd.show();
 	return app.exec();

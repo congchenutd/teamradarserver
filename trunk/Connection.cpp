@@ -11,6 +11,7 @@ Connection::Connection(QObject *parent)
 	transferTimerID = 0;
 	userName = tr("Unknown");
 	receiver = new Receiver(this);
+	sender   = new Sender  (this);
 
 	connect(this, SIGNAL(readyRead()),    this, SLOT(onReadyRead()));
 	connect(this, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
@@ -255,4 +256,32 @@ void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer
 
 Receiver::Receiver(Connection* c) {
 	connection = c;
+}
+
+Sender* Receiver::getSender() const {
+	return connection->getSender();
+}
+
+QString Receiver::getUserName() const {
+	return connection->getUserName();
+}
+
+//////////////////////////////////////////////////////////////////////////
+Sender::Sender(Connection* c) {
+	connection = c;
+}
+
+void Sender::sendEvent(const QString& userName, const QString& event, const QString& parameters) {
+	if(connection->getState() == Connection::ReadyForUse)
+		connection->send("EVENT", userName.toUtf8() + "#" + event.toUtf8() + "#" + parameters.toUtf8());
+}
+
+void Sender::sendPhotoResponse(const QString& fileName, const QByteArray& photoData) {
+	if(connection->getState() == Connection::ReadyForUse)
+		connection->send("PHOTO_RESPONSE", QList<QByteArray>() << fileName.toUtf8() << photoData);
+}
+
+void Sender::sendUserListResponse(const QList<QByteArray>& userList) {
+	if(connection->getState() == Connection::ReadyForUse)
+		connection->send("USERLIST_RESPONSE", userList);
 }
