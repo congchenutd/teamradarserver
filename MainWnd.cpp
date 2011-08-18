@@ -1,5 +1,6 @@
 #include "MainWnd.h"
 #include "Connection.h"
+#include "../ImageColorBoolModel/ImageColorBoolDelegate.h"
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QMenu>
@@ -23,18 +24,25 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	// database
 	modelLogs.setTable("Logs");
 	modelLogs.select();
-	ui.tableView->setModel(&modelLogs);
-	ui.tableView->hideColumn(ID);
-	ui.tableView->sortByColumn(TIME, Qt::DescendingOrder);
+	ui.tvLogs->setModel(&modelLogs);
+	ui.tvLogs->hideColumn(ID);
+	ui.tvLogs->sortByColumn(TIME, Qt::DescendingOrder);
+	ui.tvLogs->resizeColumnsToContents();
 
-	QSqlQuery query;
-	query.exec(tr("delete from Connections"));
+	UsersModel::makeAllOffline();
+	modelUsers.setTable("Users");
+	modelUsers.select();
+	modelUsers.setColumnType(modelUsers.USERNAME, modelUsers.NameColumn);
+	modelUsers.setColumnType(modelUsers.COLOR,    modelUsers.ColorColumn);
+	modelUsers.setColumnType(modelUsers.IMAGE,    modelUsers.ImageColumn);
+	modelUsers.setColumnType(modelUsers.ONLINE,   modelUsers.BoolColumn);
+	modelUsers.setGrayImageBy(modelUsers.ONLINE);
+	ui.tvUsers->setModel(&modelUsers);
+	ui.tvUsers->hideColumn(modelUsers.ONLINE);
+	ui.tvUsers->hideColumn(modelUsers.IMAGE);
+	resizeUserTable();
 
-	modelConnections.setTable("Connections");
-	modelConnections.select();
-	ui.listView->setModel(&modelConnections);
-	ui.listView->setModelColumn(0);
-
+	connect(&modelUsers, SIGNAL(selected()), this, SLOT(resizeUserTable()));
 	connect(ui.sbPort, SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
 	connect(&server, SIGNAL(newConnection(Connection*)), this, SLOT(onNewConnection(Connection*)));
 	connect(ui.btClear,  SIGNAL(clicked()), this, SLOT(onClear()));
@@ -103,18 +111,20 @@ void MainWnd::onReadyForUse()
 		return;
 
 	Receiver* receiver = connection->getReceiver();
-	connect(receiver, SIGNAL(newMessage(QString, QByteArray)),	     this, SLOT(onNewMessage(QString, QByteArray)));
-	connect(receiver, SIGNAL(registerPhoto(QByteArray, QByteArray)), this, SLOT(onRegisterPhoto(QByteArray, QByteArray)));
-	connect(receiver, SIGNAL(requestUserList()),                     this, SLOT(onRequestUserList()));
-	connect(receiver, SIGNAL(requestPhoto(QByteArray)),              this, SLOT(onRequestPhoto(QByteArray)));
+	connect(receiver, SIGNAL(newEvent(QString, QByteArray)), this, SLOT(onNewEvent(QString, QByteArray)));
+	connect(receiver, SIGNAL(requestUserList()),             this, SLOT(onRequestUserList()));
+	connect(receiver, SIGNAL(registerPhoto(QString, QByteArray)), this, SLOT(onRegisterPhoto(QString, QByteArray)));
+	connect(receiver, SIGNAL(registerColor(QString, QByteArray)), this, SLOT(onRegisterColor(QString, QByteArray)));
+	connect(receiver, SIGNAL(requestPhoto(QString)), this, SLOT(onRequestPhoto(QString)));
+	connect(receiver, SIGNAL(requestColor(QString)), this, SLOT(onRequestColor(QString)));
 
 	// new client
 	clients.insert(Address(connection->peerAddress().toString(), connection->peerPort()), connection);
-	broadcast(connection->getUserName().toUtf8(), "CONNECTED", "");
+	broadcast(TeamRadarEvent(connection->getUserName().toUtf8(), "CONNECTED", ""));
 	
-	QSqlQuery query;
-	query.exec(tr("insert into Connections values (\"%1\")").arg(connection->getUserName()));
-	modelConnections.select();
+	UsersModel::addUser(connection->getUserName());
+	UsersModel::makeOnline(connection->getUserName());
+	modelUsers.select();
 }
 
 void MainWnd::removeConnection(Connection *connection)
@@ -123,11 +133,10 @@ void MainWnd::removeConnection(Connection *connection)
 	{
 		clients.remove(Address(connection->peerAddress().toString(), 
 							   connection->peerPort()));
-		broadcast(connection->getUserName(), "DISCONNECTED", "");
+		broadcast(TeamRadarEvent(connection->getUserName(), "DISCONNECTED", ""));
 
-		QSqlQuery query;
-		query.exec(tr("delete from Connections where Username = \"%1\"").arg(connection->getUserName()));
-		modelConnections.select();
+		UsersModel::makeOffline(connection->getUserName());
+		modelUsers.select();
 	}
 
 	connection->deleteLater();
@@ -167,36 +176,40 @@ void MainWnd::onPortChanged(int port)
 	server.listen(QHostAddress::Any, port);
 }
 
-void MainWnd::onNewMessage(const QString& user, const QByteArray& message)
+void MainWnd::onNewEvent(const QString& user, const QByteArray& message)
 {
 	QByteArray event      = message.split('#').at(0);
 	QByteArray parameters = message.split('#').at(1);
-	broadcast(user, event, parameters);
+	broadcast(TeamRadarEvent(user, event, parameters));
 }
 
-void MainWnd::log(const QString& user, const QByteArray& event, const QString& parameters)
+void MainWnd::log(const TeamRadarEvent& event)
 {
 	int lastRow = modelLogs.rowCount();
 	modelLogs.insertRow(lastRow);
 	modelLogs.setData(modelLogs.index(lastRow, ID),         getNextID("Logs", "ID"));
 	modelLogs.setData(modelLogs.index(lastRow, TIME),       QDateTime::currentDateTime().toString(Qt::ISODate));
-	modelLogs.setData(modelLogs.index(lastRow, CLIENT),     user);
-	modelLogs.setData(modelLogs.index(lastRow, EVENT),      event);
-	modelLogs.setData(modelLogs.index(lastRow, PARAMETERS), parameters);
+	modelLogs.setData(modelLogs.index(lastRow, CLIENT),     event.userName);
+	modelLogs.setData(modelLogs.index(lastRow, EVENT),      event.eventType);
+	modelLogs.setData(modelLogs.index(lastRow, PARAMETERS), event.parameter);
 	modelLogs.submitAll();
+	ui.tvLogs->resizeColumnsToContents();
 }
 
-void MainWnd::broadcast(const QString& user, const QByteArray& event, const QByteArray& parameters)
+void MainWnd::broadcast(const QString& sourceUser, const QByteArray& packet)
 {
 	for(Clients::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		Connection* connection = it.value();
-		if(connection->getUserName() == user)  // skip the source
-			continue;
-		QString userName = user.split("@").front();
-		connection->getSender()->sendEvent(userName, event, parameters);
+		if(connection->getUserName() != sourceUser)  // skip the source
+			connection->getSender()->send(packet);
 	}
-	log(user, event, parameters);
+}
+
+void MainWnd::broadcast(const TeamRadarEvent& event)
+{
+	broadcast(event.userName, Sender::makeEventPacket(event));
+	log(event);
 }
 
 void MainWnd::onClear()
@@ -237,6 +250,19 @@ void MainWnd::onExport()
 	modelLogs.sort(TIME, Qt::DescendingOrder);
 }
 
+void MainWnd::onRequestUserList()
+{
+	// make user list
+	QList<QByteArray> users;
+	foreach(Connection* connection, clients)
+		users << connection->getUserName().toUtf8();
+
+	Receiver* receiver = qobject_cast<Receiver*>(sender());
+	Sender* sender = receiver->getSender();
+	sender->send(sender->makeUserListResponse(users));
+	log(TeamRadarEvent(receiver->getUserName(), "Request user list"));
+}
+
 void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
 {
 	int seperator = photoData.indexOf('#');
@@ -245,41 +271,59 @@ void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
 
 	QByteArray suffix   = photoData.left(seperator);
 	QByteArray fileData = photoData.right(photoData.length() - seperator - 1);
-	QFile file(user + "." + suffix);
+	QString fileName(user + "." + suffix);
+	QFile file(fileName);
 	if(file.open(QFile::WriteOnly | QFile::Truncate))
 	{
 		file.write(fileData);
-		log(user, "RegisterPhoto");
+		UsersModel::setImage(user, fileName);
+		modelUsers.select();
+		log(TeamRadarEvent(user, "Register Photo"));
+
+		// update other users
+		broadcast(user, Sender::makePhotoResponse(fileName, fileData));
 	}
 }
 
-void MainWnd::onRequestPhoto(const QByteArray& targetUser)
+void MainWnd::onRegisterColor(const QString& user, const QByteArray& color)
+{
+	UsersModel::setColor(user, color);
+	modelUsers.select();
+	log(TeamRadarEvent(user, "Register Color"));
+
+	// update other users
+	broadcast(user, Sender::makeColorResponse(user, color));
+}
+
+void MainWnd::onRequestPhoto(const QString& targetUser)
 {
 	QString fileName = targetUser + ".png";
 	QFile file(fileName);
 	Receiver* receiver = qobject_cast<Receiver*>(sender());
+	Sender* sender = receiver->getSender();
 	if(file.open(QFile::ReadOnly))
 	{
-		QByteArray photoData = file.readAll();
-		receiver->getSender()->sendPhotoResponse(fileName, photoData);
-		log(receiver->getUserName(), "Request photo of " + targetUser);
+		sender->send(Sender::makePhotoResponse(fileName, file.readAll()));
+		log(TeamRadarEvent(sender->getUserName(), "Request photo of", targetUser));
 	}
-	else
-	{
-		receiver->getSender()->sendPhotoResponse(QString(), QByteArray());
-		log(receiver->getUserName(), "Failed: Request photo of " + targetUser);
+	else {
+		log(TeamRadarEvent(sender->getUserName(), "Failed: Request photo of", targetUser));
 	}
 }
 
-void MainWnd::onRequestUserList()
+void MainWnd::onRequestColor(const QString& targetUser)
 {
-	QList<QByteArray> users;
-	foreach(Connection* connection, clients)
-		users << connection->getUserName().toUtf8();
-
 	Receiver* receiver = qobject_cast<Receiver*>(sender());
-	receiver->getSender()->sendUserListResponse(users);
-	log(receiver->getUserName(), "Request user list");
+	Sender* sender = receiver->getSender();
+	QByteArray color = UsersModel::getColor(targetUser).toUtf8();
+	sender->send(Sender::makeColorResponse(targetUser, color));
+	log(TeamRadarEvent(sender->getUserName(), "Request color of", targetUser));
+}
+
+void MainWnd::resizeUserTable()
+{
+	ui.tvUsers->resizeRowsToContents();
+	ui.tvUsers->resizeColumnsToContents();
 }
 
 int getNextID(const QString& tableName, const QString& sectionName)

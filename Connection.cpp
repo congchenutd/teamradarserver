@@ -1,6 +1,7 @@
 #include "Connection.h"
 #include <QHostAddress>
 #include <QTimerEvent>
+#include <QColor>
 
 Connection::Connection(QObject *parent)
 	: QTcpSocket(parent)
@@ -66,12 +67,13 @@ void Connection::onReadyRead()
 
 		if(!userNames.contains(userName))  // check user name
 		{
-			send("GREETING", "OK, CONNECTED");
+			write(Sender::makePacket("GREETING", "OK, CONNECTED"));
 			userNames.insert(userName);
 		}
 		else
 		{
-			send("GREETING", "WRONG_USER");
+			write(Sender::makePacket("GREETING", "WRONG_USER"));
+			abort();
 			return;
 		}
 
@@ -198,24 +200,6 @@ void Connection::onDisconnected() {
 
 QSet<QString> Connection::userNames;
 
-void Connection::send(const QByteArray& header, const QByteArray& body)
-{
-	QByteArray message(header);
-	if(!header.endsWith("#"))
-		message.append("#");
-	message.append(QByteArray::number(body.length()) + '#' + body);
-	write(message);
-}
-
-void Connection::send(const QByteArray& header, const QList<QByteArray>& bodies)
-{
-	QByteArray joined;
-	foreach(QByteArray body, bodies)
-		joined.append(body + "#");
-	joined.chop(1);
-	send(header, joined);
-}
-
 //////////////////////////////////////////////////////////////////////////
 Receiver::DataType Receiver::guessDataType(const QByteArray& header)
 {
@@ -229,6 +213,10 @@ Receiver::DataType Receiver::guessDataType(const QByteArray& header)
 		return RequestPhoto;
 	if(header.startsWith("REQUEST_USERLIST"))
 		return RequestUserList;
+	if(header.startsWith("REGISTER_COLOR"))
+		return RegisterColor;
+	if(header.startsWith("REQUEST_COLOR"))
+		return RequestColor;
 	return Undefined;
 }
 
@@ -238,7 +226,7 @@ void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer
 	switch(dataType)
 	{
 	case Event:
-		emit newMessage(userName, buffer);
+		emit newEvent(userName, buffer);
 		break;
 	case RegisterPhoto:
 		emit registerPhoto(userName, buffer);
@@ -248,6 +236,12 @@ void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer
 		break;
 	case RequestUserList:
 		emit requestUserList();
+		break;
+	case RegisterColor:
+		emit registerColor(userName, buffer);
+		break;
+	case RequestColor:
+		emit requestColor(buffer);
 		break;
 	default:
 		break;
@@ -271,17 +265,47 @@ Sender::Sender(Connection* c) {
 	connection = c;
 }
 
-void Sender::sendEvent(const QString& userName, const QString& event, const QString& parameters) {
-	if(connection->getState() == Connection::ReadyForUse)
-		connection->send("EVENT", userName.toUtf8() + "#" + event.toUtf8() + "#" + parameters.toUtf8());
+QByteArray Sender::makePacket(const QByteArray& header, const QByteArray& body)
+{
+	QByteArray packet(header);
+	if(!header.endsWith("#"))
+		packet.append("#");
+	packet.append(QByteArray::number(body.length()) + '#' + body);
+	return packet;
 }
 
-void Sender::sendPhotoResponse(const QString& fileName, const QByteArray& photoData) {
-	if(connection->getState() == Connection::ReadyForUse)
-		connection->send("PHOTO_RESPONSE", QList<QByteArray>() << fileName.toUtf8() << photoData);
+QByteArray Sender::makePacket(const QByteArray& header, const QList<QByteArray>& bodies)
+{
+	QByteArray joined;
+	foreach(QByteArray body, bodies)
+		joined.append(body + "#");
+	joined.chop(1);
+	return makePacket(header, joined);
 }
 
-void Sender::sendUserListResponse(const QList<QByteArray>& userList) {
+QByteArray Sender::makeEventPacket(const TeamRadarEvent& event) {
+	return makePacket("EVENT", QList<QByteArray>() << event.userName.toUtf8()
+												   << event.eventType.toUtf8()
+												   << event.parameter.toUtf8());
+}
+
+QByteArray Sender::makeUserListResponse(const QList<QByteArray>& userList) {
+	return makePacket("USERLIST_RESPONSE", userList);
+}
+
+QByteArray Sender::makePhotoResponse(const QString& fileName, const QByteArray& photoData) {
+	return makePacket("PHOTO_RESPONSE", QList<QByteArray>() << fileName.toUtf8() << photoData);
+}
+
+QByteArray Sender::makeColorResponse(const QString& targetUser, const QByteArray& color) {
+	return makePacket("COLOR_RESPONSE", QList<QByteArray>() << targetUser.toUtf8() << color);
+}
+
+void Sender::send(const QByteArray& packet) {
 	if(connection->getState() == Connection::ReadyForUse)
-		connection->send("USERLIST_RESPONSE", userList);
+		connection->write(packet);
+}
+
+QString Sender::getUserName() const {
+	return connection->getUserName();
 }

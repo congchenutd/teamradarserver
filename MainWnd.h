@@ -10,8 +10,10 @@
 #include "ui_MainWnd.h"
 #include "Server.h"
 #include "../MySetting/MySetting.h"
+#include "UsersModel.h"
 
 class UserSetting;
+struct TeamRadarEvent;
 
 class MainWnd : public QDialog
 {
@@ -35,13 +37,16 @@ private slots:
 	void onConnectionError();
 	void onDisconnected();
 	void onReadyForUse();
-	void onNewMessage(const QString& user, const QByteArray& message);
+	void onNewEvent(const QString& user, const QByteArray& message);
 	void onClear();
 	void onAbout();
 	void onExport();
-	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
-	void onRequestPhoto (const QByteArray& targetUser);
 	void onRequestUserList();
+	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
+	void onRegisterColor(const QString& user, const QByteArray& color);
+	void onRequestPhoto (const QString& targetUser);
+	void onRequestColor (const QString& targetUser);
+	void resizeUserTable();
 
 private:
 	void createTray();
@@ -50,8 +55,9 @@ private:
 	bool connectionExists(const Connection* connection) const;
 	QString getCurrentLocalAddress() const;
 	void    setCurrentLocalAddress(const QString& address);
-	void log      (const QString& user, const QByteArray& event, const QString& parameters = QString());
-	void broadcast(const QString& user, const QByteArray& event, const QByteArray& parameters = QByteArray());
+	void broadcast(const QString& sourceUser, const QByteArray& packet);
+	void broadcast(const TeamRadarEvent& event);
+	void log      (const TeamRadarEvent& event);
 
 public:
 	enum {ID, TIME, CLIENT, EVENT, PARAMETERS};
@@ -63,7 +69,7 @@ private:
 	Server server;
 	Clients clients;
 	QSqlTableModel modelLogs;
-	QSqlTableModel modelConnections;
+	UsersModel modelUsers;
 };
 
 
