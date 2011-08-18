@@ -8,7 +8,9 @@
 #include <QSet>
 
 // Parses the message header & body from Connection
-// Accepts 5 types of header: GREETING, REGISTER_PHOTO, REQUEST_USERLIST, REQUEST_PHOTO, EVENT
+// Headers accepted: GREETING, REGISTER_PHOTO, REQUEST_USERLIST, REQUEST_PHOTO, EVENT, 
+//					 REGISTER_COLOR, REQUEST_COLOR
+// Clients do not send their user names, as they have signed up with GREETING.
 // Format of packet: header#size#body
 // Format of body:
 //		GREETING: [OK, CONNECTED]/[WRONG_USER]
@@ -17,6 +19,8 @@
 //		REGISTER_PHOTO: file format#binary photo data
 //		EVENT: event type#parameters
 //			Format of parameters: parameter1#parameter2#...
+//		REGISTER_COLOR: color
+//		REQUEST_COLOR: target user name
 
 class Connection;
 class Sender;
@@ -30,9 +34,11 @@ public:
 		Undefined,
 		Greeting,
 		Event,
+		RequestUserList,
 		RegisterPhoto,
+		RegisterColor,
 		RequestPhoto,
-		RequestUserList
+		RequestColor
 	} DataType;
 
 public:
@@ -43,10 +49,12 @@ public:
 	QString getUserName() const;
 
 signals:
-	void newMessage(const QString& from, const QByteArray& message);
-	void registerPhoto(const QString& user, const QByteArray& photo);
-	void requestPhoto (const QByteArray& targetUser);
+	void newEvent(const QString& from, const QByteArray& message);
 	void requestUserList();
+	void requestPhoto(const QString& targetUser);
+	void requestColor(const QString& targetUser);
+	void registerPhoto(const QString& user, const QByteArray& photo);
+	void registerColor(const QString& user, const QByteArray& color);
 
 private:
 	Connection* connection;
@@ -69,8 +77,6 @@ public:
 	Connection(QObject* parent = 0);
 	QString         getUserName() const { return userName; }
 	ConnectionState getState()    const { return state;    }
-	void send(const QByteArray& header, const QByteArray& body = QByteArray("P"));
-	void send(const QByteArray& header, const QList<QByteArray>& bodies);
 	Receiver* getReceiver() const { return receiver; }
 	Sender*   getSender()   const { return sender;   }
 
@@ -117,20 +123,37 @@ private:
 // Format of body:
 //		PHOTO_RESPONSE: [filename#binary photo data]/[empty]
 //		USERLIST_RESPONSE: username1#username2#...
-//		EVENT: event#parameters
+//		EVENT: user#event#[parameters]
 //			Format of parameters: parameter1#parameter2#...
 
+struct TeamRadarEvent;
 class Sender : public QObject
 {
 public:
 	Sender(Connection* c);
-	void sendEvent(const QString& userName, const QString& event, const QString& parameters);
-	void sendPhotoResponse(const QString& fileName, const QByteArray& photoData);
-	void sendUserListResponse(const QList<QByteArray>& userList);
+	QString getUserName() const;
+	void send(const QByteArray& packet);  // raw packet
+
+	static QByteArray makePacket(const QByteArray& header, const QByteArray& body = QByteArray("P"));
+	static QByteArray makePacket(const QByteArray& header, const QList<QByteArray>& bodies);
+	static QByteArray makeEventPacket(const TeamRadarEvent& event);
+	static QByteArray makeUserListResponse(const QList<QByteArray>& userList);
+	static QByteArray makePhotoResponse(const QString& fileName,   const QByteArray& photoData);
+	static QByteArray makeColorResponse(const QString& targetUser, const QByteArray& color);
 
 private:
 	Connection* connection;
 };
 
+struct TeamRadarEvent
+{
+	TeamRadarEvent::TeamRadarEvent(const QString& name, const QString& event, const QString& para = QString())
+		: userName(name), eventType(event), parameter(para)
+	{}
+
+	QString userName;
+	QString eventType;
+	QString parameter;
+};
 
 #endif // CONNECTION_H

@@ -72,7 +72,7 @@
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
        <item row="0" column="0" colspan="3">
-        <widget class="QTableView" name="tableView">
+        <widget class="QTableView" name="tvLogs">
          <property name="editTriggers">
           <set>QAbstractItemView::NoEditTriggers</set>
          </property>
@@ -82,9 +82,6 @@
          <property name="sortingEnabled">
           <bool>true</bool>
          </property>
-         <attribute name="horizontalHeaderStretchLastSection">
-          <bool>true</bool>
-         </attribute>
         </widget>
        </item>
        <item row="1" column="0">
@@ -119,13 +116,23 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tabConnections">
+     <widget class="QWidget" name="tabUsers">
       <attribute name="title">
-       <string>Connections</string>
+       <string>Users</string>
       </attribute>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
-        <widget class="QListView" name="listView"/>
+        <widget class="QTableView" name="tvUsers">
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SingleSelection</enum>
+         </property>
+         <property name="selectionBehavior">
+          <enum>QAbstractItemView::SelectRows</enum>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
