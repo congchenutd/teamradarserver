@@ -24,10 +24,9 @@ class MainWnd : public QDialog
 
 public:
 	MainWnd(QWidget *parent = 0, Qt::WFlags flags = 0);
-	~MainWnd() {}
 
 protected:
-	void closeEvent(QCloseEvent* event);
+	void closeEvent(QCloseEvent* event);   // hide, instead of close
 
 private slots:
 	void onShutdown();
@@ -37,10 +36,10 @@ private slots:
 	void onConnectionError();
 	void onDisconnected();
 	void onReadyForUse();
-	void onNewEvent(const QString& user, const QByteArray& message);
 	void onClear();
 	void onAbout();
 	void onExport();
+	void onNewEvent(const QString& user, const QByteArray& message);
 	void onRequestUserList();
 	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
 	void onRegisterColor(const QString& user, const QByteArray& color);
@@ -55,21 +54,23 @@ private:
 	bool connectionExists(const Connection* connection) const;
 	QString getCurrentLocalAddress() const;
 	void    setCurrentLocalAddress(const QString& address);
+
 	void broadcast(const QString& sourceUser, const QByteArray& packet);
 	void broadcast(const TeamRadarEvent& event);
 	void log      (const TeamRadarEvent& event);
 
 public:
-	enum {ID, TIME, CLIENT, EVENT, PARAMETERS};
+	enum {ID, TIME, CLIENT, EVENT, PARAMETERS};  // for the log model
 
 private:
 	Ui::MainWndClass ui;
+
 	UserSetting* setting;
 	QSystemTrayIcon* trayIcon;
-	Server server;
+	Server  server;
 	Clients clients;
 	QSqlTableModel modelLogs;
-	UsersModel modelUsers;
+	UsersModel     modelUsers;
 };
 
 

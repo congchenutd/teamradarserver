@@ -61,7 +61,10 @@ private:
 };
 
 // A TCP socket connected to the server
-// NOT a singleton: one connection from the server to each client
+// NOT a singleton: one connection for each client
+
+// After the connection is set up, 
+// the parsing and composition of messages are handed to Receiver and Sender
 class Connection : public QTcpSocket
 {
 	Q_OBJECT
@@ -77,18 +80,14 @@ public:
 	Connection(QObject* parent = 0);
 	QString         getUserName() const { return userName; }
 	ConnectionState getState()    const { return state;    }
-	Receiver* getReceiver() const { return receiver; }
-	Sender*   getSender()   const { return sender;   }
+	Receiver*       getReceiver() const { return receiver; }
+	Sender*         getSender()   const { return sender;   }
 
 protected:
-	void timerEvent(QTimerEvent* timerEvent);
+	void timerEvent(QTimerEvent* timerEvent);   // for transfer timeout
 
 signals:
 	void readyForUse();
-	void newMessage(const QString& from, const QByteArray& message);
-	void registerPhoto(const QString& user, const QByteArray& photo);
-	void requestPhoto (const QByteArray& targetUser);
-	void requestUserList();
 
 private slots:
 	void onReadyRead();    // data coming
@@ -110,21 +109,25 @@ private:
 	Receiver::DataType dataType;
 	QByteArray      buffer;
 	int             numBytes;
-	int             transferTimerID;
+	int             transferTimerID;   // for transfer timeout
 	QString         userName;
 	Receiver*       receiver;
 	Sender*         sender;
 
-	static QSet<QString> userNames;
+	static QSet<QString> userNames;   // detects name duplication
 };
 
-// Sends 3 types of header: PHOTO_RESPONSE, USERLIST_RESPONSE, EVENT
+// Format and send packets
+// Headers: PHOTO_RESPONSE, USERLIST_RESPONSE, EVENT, COLOR_RESPONSE
 // Format of packet: header#size#body
 // Format of body:
 //		PHOTO_RESPONSE: [filename#binary photo data]/[empty]
 //		USERLIST_RESPONSE: username1#username2#...
 //		EVENT: user#event#[parameters]
 //			Format of parameters: parameter1#parameter2#...
+//		COLOR_RESPONSE: targetUser#color
+
+//	Formatting and sending are separated for flexibility
 
 struct TeamRadarEvent;
 class Sender : public QObject
@@ -132,8 +135,9 @@ class Sender : public QObject
 public:
 	Sender(Connection* c);
 	QString getUserName() const;
-	void send(const QByteArray& packet);  // raw packet
+	void send(const QByteArray& packet);  // send the formatted packet
 
+	// format the packet
 	static QByteArray makePacket(const QByteArray& header, const QByteArray& body = QByteArray("P"));
 	static QByteArray makePacket(const QByteArray& header, const QList<QByteArray>& bodies);
 	static QByteArray makeEventPacket(const TeamRadarEvent& event);
