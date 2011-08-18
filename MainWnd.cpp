@@ -119,7 +119,7 @@ void MainWnd::onReadyForUse()
 	connect(receiver, SIGNAL(requestColor(QString)), this, SLOT(onRequestColor(QString)));
 
 	// new client
-	clients.insert(Address(connection->peerAddress().toString(), connection->peerPort()), connection);
+	connections.insert(connection->getUserName(), connection);
 	broadcast(TeamRadarEvent(connection->getUserName().toUtf8(), "CONNECTED", ""));
 	
 	// refresh the user table
@@ -132,8 +132,7 @@ void MainWnd::removeConnection(Connection *connection)
 {
 	if(connectionExists(connection))
 	{
-		clients.remove(Address(connection->peerAddress().toString(), 
-							   connection->peerPort()));
+		connections.remove(connection->getUserName());
 		broadcast(TeamRadarEvent(connection->getUserName(), "DISCONNECTED", ""));
 
 		UsersModel::makeOffline(connection->getUserName());
@@ -144,8 +143,7 @@ void MainWnd::removeConnection(Connection *connection)
 }
 
 bool MainWnd::connectionExists(const Connection* connection) const {
-	return clients.contains(
-		Address(connection->peerAddress().toString(), connection->peerPort()));
+	return connections.contains(connection->getUserName());
 }
 
 // find all local IP addresses
@@ -199,12 +197,9 @@ void MainWnd::log(const TeamRadarEvent& event)
 
 void MainWnd::broadcast(const QString& sourceUser, const QByteArray& packet)
 {
-	for(Clients::iterator it = clients.begin(); it != clients.end(); ++it)
-	{
-		Connection* connection = it.value();
+	foreach(Connection* connection, connections)
 		if(connection->getUserName() != sourceUser)  // skip the source
 			connection->getSender()->send(packet);
-	}
 }
 
 void MainWnd::broadcast(const TeamRadarEvent& event)
@@ -255,7 +250,7 @@ void MainWnd::onRequestUserList()
 {
 	// make user list
 	QList<QByteArray> users;
-	foreach(Connection* connection, clients)
+	foreach(Connection* connection, connections)
 		users << connection->getUserName().toUtf8();
 
 	Receiver* receiver = qobject_cast<Receiver*>(sender());

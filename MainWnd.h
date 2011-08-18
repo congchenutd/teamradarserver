@@ -19,8 +19,7 @@ class MainWnd : public QDialog
 {
 	Q_OBJECT
 
-	typedef QPair<QString, int> Address;
-	typedef QHash<Address, Connection*> Clients;
+	typedef QMap<QString, Connection*> Connections;
 
 public:
 	MainWnd(QWidget *parent = 0, Qt::WFlags flags = 0);
@@ -67,8 +66,8 @@ private:
 
 	UserSetting* setting;
 	QSystemTrayIcon* trayIcon;
-	Server  server;
-	Clients clients;
+	Server         server;
+	Connections    connections;
 	QSqlTableModel modelLogs;
 	UsersModel     modelUsers;
 };
