@@ -3,10 +3,8 @@
 #include <QTimerEvent>
 #include <QColor>
 
-Connection::Connection(QObject *parent)
-	: QTcpSocket(parent)
+Connection::Connection(QObject *parent) : QTcpSocket(parent)
 {
-	state = WaitingForGreeting;
 	dataType = Receiver::Undefined;
 	numBytes = -1;
 	transferTimerID = 0;
@@ -30,62 +28,10 @@ void Connection::timerEvent(QTimerEvent* timerEvent) {
 // new data incoming
 void Connection::onReadyRead()
 {
-	if(state == WaitingForGreeting)
-	{
-		if(!readHeader())  // get data type and length
-			return;
-		if(dataType != Receiver::Greeting)
-		{
-			abort();
-			return;
-		}
-		state = ReadingGreeting;
-	}
-
-	if(state == ReadingGreeting)
-	{
-		if(!hasEnoughData())   // read numBytes bytes of data
-			return;
-
-		buffer = read(numBytes);
-		if(buffer.size() != numBytes)
-		{
-			abort();
-			return;
-		}
-
-		userName = buffer;
-		dataType = Receiver::Undefined;
-		numBytes = 0;
-		buffer.clear();
-
-		if(!isValid())   // don't know why it's here
-		{
-			abort();
-			return;
-		}
-
-		if(!userNames.contains(userName))  // check user name
-		{
-			write(Sender::makePacket("GREETING", "OK, CONNECTED"));
-			userNames.insert(userName);
-		}
-		else
-		{
-			write(Sender::makePacket("GREETING", "WRONG_USER"));
-			abort();
-			return;
-		}
-
-		state = ReadyForUse;
-		emit readyForUse();
-	}
-
-	do   // connected
-	{
+	do {
 		if(dataType == Receiver::Undefined && !readHeader())  // read header, size
 			return;
-		if(!hasEnoughData())                        // wait data
+		if(!hasEnoughData())                                  // wait data
 			return;
 		processData();
 	} while(bytesAvailable() > 0);
@@ -190,8 +136,21 @@ void Connection::processData()
 	buffer.clear();
 }
 
-void Connection::onDisconnected() {
+void Connection::onDisconnected()
+{
 	userNames.remove(userName);
+	ready = false;
+}
+
+void Connection::setReadyForUse()
+{
+	userNames.insert(userName);  // add itself
+	ready = true;
+	emit readyForUse();
+}
+
+bool Connection::userExists(const QString& userName) {
+	return userNames.contains(userName);
 }
 
 QSet<QString> Connection::userNames;
@@ -218,6 +177,11 @@ Receiver::DataType Receiver::guessDataType(const QByteArray& header)
 
 void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer)
 {
+	// before connected
+	if(dataType == Greeting)
+		return receiveGreeting(buffer);
+
+	// after connected
 	QString userName = connection->getUserName();
 	switch(dataType)
 	{
@@ -244,6 +208,22 @@ void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer
 	}
 }
 
+void Receiver::receiveGreeting(const QByteArray& buffer)
+{
+	QString userName = buffer;
+	connection->setUserName(userName);
+	if(!connection->userExists(userName))  // check user name
+	{
+		connection->write(Sender::makePacket("GREETING", "OK, CONNECTED"));
+		connection->setReadyForUse();
+	}
+	else
+	{
+		connection->write(Sender::makePacket("GREETING", "WRONG_USER"));
+		abort();
+	}
+}
+
 Receiver::Receiver(Connection* c) {
 	connection = c;
 }
@@ -255,6 +235,7 @@ Sender* Receiver::getSender() const {
 QString Receiver::getUserName() const {
 	return connection->getUserName();
 }
+
 
 //////////////////////////////////////////////////////////////////////////
 Sender::Sender(Connection* c) {
@@ -298,7 +279,7 @@ QByteArray Sender::makeColorResponse(const QString& targetUser, const QByteArray
 }
 
 void Sender::send(const QByteArray& packet) {
-	if(connection->getState() == Connection::ReadyForUse)
+	if(connection->isReadyForUse())
 		connection->write(packet);
 }
 

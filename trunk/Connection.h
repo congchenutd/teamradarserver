@@ -57,6 +57,9 @@ signals:
 	void registerColor(const QString& user, const QByteArray& color);
 
 private:
+	void receiveGreeting(const QByteArray& buffer);
+
+private:
 	Connection* connection;
 };
 
@@ -70,18 +73,15 @@ class Connection : public QTcpSocket
 	Q_OBJECT
 
 public:
-	typedef enum {
-		WaitingForGreeting,
-		ReadingGreeting,
-		ReadyForUse
-	} ConnectionState;
-
-public:
 	Connection(QObject* parent = 0);
-	QString         getUserName() const { return userName; }
-	ConnectionState getState()    const { return state;    }
-	Receiver*       getReceiver() const { return receiver; }
-	Sender*         getSender()   const { return sender;   }
+	QString         getUserName()   const { return userName; }
+	Receiver*       getReceiver()   const { return receiver; }
+	Sender*         getSender()     const { return sender;   }
+	bool            isReadyForUse() const { return ready;    }
+	void setUserName(const QString& name) { userName = name; }
+	void setReadyForUse();
+
+	static bool userExists(const QString& userName);
 
 protected:
 	void timerEvent(QTimerEvent* timerEvent);   // for transfer timeout
@@ -105,7 +105,7 @@ public:
 	static const int  TransferTimeout = 30 * 1000;
 
 private:
-	ConnectionState state;
+	bool            ready;
 	Receiver::DataType dataType;
 	QByteArray      buffer;
 	int             numBytes;
