@@ -5,6 +5,7 @@
 
 Connection::Connection(QObject *parent) : QTcpSocket(parent)
 {
+	ready = false;
 	dataType = Receiver::Undefined;
 	numBytes = -1;
 	transferTimerID = 0;

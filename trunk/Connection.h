@@ -105,14 +105,14 @@ public:
 	static const int  TransferTimeout = 30 * 1000;
 
 private:
-	bool            ready;
 	Receiver::DataType dataType;
-	QByteArray      buffer;
-	int             numBytes;
-	int             transferTimerID;   // for transfer timeout
-	QString         userName;
-	Receiver*       receiver;
-	Sender*         sender;
+	bool       ready;
+	QByteArray buffer;
+	int        numBytes;
+	int        transferTimerID;   // for transfer timeout
+	QString    userName;
+	Receiver*  receiver;
+	Sender*    sender;
 
 	static QSet<QString> userNames;   // detects name duplication
 };

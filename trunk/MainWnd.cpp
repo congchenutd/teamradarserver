@@ -37,6 +37,7 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	modelUsers.setColumnType(modelUsers.IMAGE,    modelUsers.ImageColumn);
 	modelUsers.setColumnType(modelUsers.ONLINE,   modelUsers.BoolColumn);
 	modelUsers.setGrayImageBy(modelUsers.ONLINE);
+	modelUsers.setSort(modelUsers.ONLINE, Qt::DescendingOrder);   // "true" before "false"
 	ui.tvUsers->setModel(&modelUsers);
 	ui.tvUsers->hideColumn(modelUsers.ONLINE);
 	ui.tvUsers->hideColumn(modelUsers.IMAGE);
