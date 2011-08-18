@@ -19,15 +19,15 @@ Connection::Connection(QObject *parent)
 }
 
 // transfer time out
-void Connection::timerEvent(QTimerEvent* timerEvent)
-{
-	if (timerEvent->timerId() == transferTimerID) {
+void Connection::timerEvent(QTimerEvent* timerEvent) {
+	if(timerEvent->timerId() == transferTimerID) {
 		abort();
 		killTimer(transferTimerID);
 		transferTimerID = 0;
 	}
 }
 
+// new data incoming
 void Connection::onReadyRead()
 {
 	if(state == WaitingForGreeting)
@@ -59,7 +59,7 @@ void Connection::onReadyRead()
 		numBytes = 0;
 		buffer.clear();
 
-		if(!isValid())   // don't know why
+		if(!isValid())   // don't know why it's here
 		{
 			abort();
 			return;
@@ -81,7 +81,7 @@ void Connection::onReadyRead()
 		emit readyForUse();
 	}
 
-	do
+	do   // connected
 	{
 		if(dataType == Receiver::Undefined && !readHeader())  // read header, size
 			return;
@@ -94,15 +94,13 @@ void Connection::onReadyRead()
 // read data type and data length
 bool Connection::readHeader()
 {
-	// reset timer
-	if(transferTimerID)
+	if(transferTimerID)   // reset timer
 	{
 		killTimer(transferTimerID);
 		transferTimerID = 0;
 	}
 
-	// read header data
-	if(readDataIntoBuffer() <= 0)
+	if(readDataIntoBuffer() <= 0)         // read header data
 	{
 		transferTimerID = startTimer(TransferTimeout);
 		return false;
@@ -111,12 +109,13 @@ bool Connection::readHeader()
 	dataType = receiver->guessDataType(buffer);
 	if(dataType == Receiver::Undefined)   // ignore unknown
 	{
+		qDebug() << "Unknown dataType: " << buffer;
 		buffer.clear();
 		return false;
 	}
 
 	buffer.clear();
-	numBytes = getDataLength();
+	numBytes = getDataLength();   // ready to read the payload
 	return true;
 }
 
@@ -157,19 +156,16 @@ int Connection::getDataLength()
 
 bool Connection::hasEnoughData()
 {
-	// reset timer
-	if(transferTimerID)
+	if(transferTimerID)   // reset timer
 	{
 		QObject::killTimer(transferTimerID);
 		transferTimerID = 0;
 	}
 
-	// get length
-	if(numBytes <= 0)
+	if(numBytes <= 0)	  // get length
 		numBytes = getDataLength();
 
-	// wait for data
-	if(bytesAvailable() < numBytes || numBytes <= 0)
+	if(bytesAvailable() < numBytes || numBytes <= 0)	// wait for data
 	{
 		transferTimerID = startTimer(TransferTimeout);
 		return false;
@@ -279,7 +275,7 @@ QByteArray Sender::makePacket(const QByteArray& header, const QList<QByteArray>&
 	QByteArray joined;
 	foreach(QByteArray body, bodies)
 		joined.append(body + "#");
-	joined.chop(1);
+	joined.chop(1);    // chop the last '#'
 	return makePacket(header, joined);
 }
 

@@ -13,15 +13,15 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 {
 	ui.setupUi(this);
 	createTray();
-	updateLocalAddresses();
+	updateLocalAddresses();   // fetch local IPs
 
 	// load setting
 	setting = UserSetting::getInstance();
-	setCurrentLocalAddress(setting->getIPAddress());
-	ui.sbPort->setValue(setting->getPort());
-	onPortChanged(setting->getPort());  // listen
+	setCurrentLocalAddress(setting->getIPAddress());   // ip
+	ui.sbPort->setValue(setting->getPort());           // port
+	onPortChanged(setting->getPort());                 // listen
 
-	// database
+	// tables
 	modelLogs.setTable("Logs");
 	modelLogs.select();
 	ui.tvLogs->setModel(&modelLogs);
@@ -42,11 +42,11 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	ui.tvUsers->hideColumn(modelUsers.IMAGE);
 	resizeUserTable();
 
-	connect(&modelUsers, SIGNAL(selected()), this, SLOT(resizeUserTable()));
-	connect(ui.sbPort, SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
 	connect(&server, SIGNAL(newConnection(Connection*)), this, SLOT(onNewConnection(Connection*)));
-	connect(ui.btClear,  SIGNAL(clicked()), this, SLOT(onClear()));
-	connect(ui.btExport, SIGNAL(clicked()), this, SLOT(onExport()));
+	connect(ui.sbPort,   SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
+	connect(&modelUsers, SIGNAL(selected()),        this, SLOT(resizeUserTable()));
+	connect(ui.btClear,  SIGNAL(clicked()),         this, SLOT(onClear()));
+	connect(ui.btExport, SIGNAL(clicked()),         this, SLOT(onExport()));
 }
 
 void MainWnd::createTray()
@@ -122,7 +122,8 @@ void MainWnd::onReadyForUse()
 	clients.insert(Address(connection->peerAddress().toString(), connection->peerPort()), connection);
 	broadcast(TeamRadarEvent(connection->getUserName().toUtf8(), "CONNECTED", ""));
 	
-	UsersModel::addUser(connection->getUserName());
+	// refresh the user table
+	UsersModel::addUser   (connection->getUserName());
 	UsersModel::makeOnline(connection->getUserName());
 	modelUsers.select();
 }
@@ -227,7 +228,7 @@ void MainWnd::onAbout() {
 	QMessageBox::about(this, tr("About"), 
 		tr("<H3>TeamRadar Server</H3>"
 		   "<P>Cong Chen</P>"
-		   "<P>2011.8.10</P>"
+		   "<P>2011.8.18</P>"
 		   "<P><a href=mailto:CongChenUTD@Gmail.com>CongChenUTD@Gmail.com</a></P>"));
 }
 
