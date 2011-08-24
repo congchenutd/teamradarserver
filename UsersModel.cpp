@@ -5,7 +5,7 @@
 #include <QSqlQuery>
 
 UsersModel::UsersModel(QObject* parent)
-	: ImageColorBoolModel(parent) {}
+	: QSqlTableModel(parent) {}
 
 bool UsersModel::openDB(const QString& name)
 {
@@ -69,7 +69,7 @@ void UsersModel::setImage(const QString& name, const QString& imagePath)
 
 bool UsersModel::select()
 {
-	bool result = ImageColorBoolModel::select();
+	bool result = QSqlTableModel::select();
 	emit selected();
 	return result;
 }

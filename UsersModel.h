@@ -1,9 +1,9 @@
 #ifndef USERSMODEL_H
 #define USERSMODEL_H
 
-#include "../ImageColorBoolModel/ImageColorBoolModel.h"
+#include <QSqlTableModel>
 
-class UsersModel : public ImageColorBoolModel
+class UsersModel : public QSqlTableModel
 {
 	Q_OBJECT
 

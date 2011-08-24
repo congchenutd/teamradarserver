@@ -83,7 +83,8 @@ int Connection::readDataIntoBuffer(int maxSize)
 	while(bytesAvailable() > 0 && buffer.size() < maxSize)
 	{
 		buffer.append(read(1));
-		if(buffer.endsWith('#'))
+//		if(buffer.endsWith('#'))
+		if(buffer.endsWith(Delimiter1))
 			break;
 	}
 
@@ -92,7 +93,7 @@ int Connection::readDataIntoBuffer(int maxSize)
 
 int Connection::getDataLength()
 {
-	if (bytesAvailable() <= 0 || readDataIntoBuffer() <= 0 || !buffer.endsWith('#'))
+	if (bytesAvailable() <= 0 || readDataIntoBuffer() <= 0 || !buffer.endsWith(Delimiter1))
 		return 0;
 
 	buffer.chop(1);    // chop separator
@@ -173,6 +174,8 @@ Receiver::DataType Receiver::guessDataType(const QByteArray& header)
 		return RegisterColor;
 	if(header.startsWith("REQUEST_COLOR"))
 		return RequestColor;
+	if(header.startsWith("REQUEST_EVENTS"))
+		return RequestEvents;
 	return Undefined;
 }
 
@@ -203,6 +206,9 @@ void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer
 		break;
 	case RequestColor:
 		emit requestColor(buffer);
+		break;
+	case RequestEvents:
+		receiveEvents(buffer);
 		break;
 	default:
 		break;
@@ -237,18 +243,40 @@ QString Receiver::getUserName() const {
 	return connection->getUserName();
 }
 
+void Receiver::receiveEvents(const QByteArray& buffer)
+{
+	QList<QByteArray> sections = buffer.split(Connection::Delimiter1);
+	if(sections.size() != 3)
+		return;
+
+	QStringList users = QString(sections[0]).split(';');
+	QString startTime = sections[1].split('-').at(0);
+	QString endTime   = sections[1].split('-').at(1);
+	QStringList events = QString(sections[2]).split(';');
+	emit requestEvents(users, QDateTime::fromString(startTime), QDateTime::fromString(endTime), events);
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 Sender::Sender(Connection* c) {
 	connection = c;
 }
 
+void Sender::send(const QByteArray& packet) {
+	if(connection->isReadyForUse())
+		connection->write(packet);
+}
+
+QString Sender::getUserName() const {
+	return connection->getUserName();
+}
+
 QByteArray Sender::makePacket(const QByteArray& header, const QByteArray& body)
 {
 	QByteArray packet(header);
-	if(!header.endsWith("#"))
-		packet.append("#");
-	packet.append(QByteArray::number(body.length()) + '#' + body);
+	if(!header.endsWith(Connection::Delimiter1))
+		packet.append(Connection::Delimiter1);
+	packet.append(QByteArray::number(body.length()) + Connection::Delimiter1 + body);
 	return packet;
 }
 
@@ -256,7 +284,7 @@ QByteArray Sender::makePacket(const QByteArray& header, const QList<QByteArray>&
 {
 	QByteArray joined;
 	foreach(QByteArray body, bodies)
-		joined.append(body + "#");
+		joined.append(body + Connection::Delimiter1);
 	joined.chop(1);    // chop the last '#'
 	return makePacket(header, joined);
 }
@@ -264,7 +292,8 @@ QByteArray Sender::makePacket(const QByteArray& header, const QList<QByteArray>&
 QByteArray Sender::makeEventPacket(const TeamRadarEvent& event) {
 	return makePacket("EVENT", QList<QByteArray>() << event.userName.toUtf8()
 												   << event.eventType.toUtf8()
-												   << event.parameter.toUtf8());
+												   << event.parameters.toUtf8()
+												   << event.time.toString().toUtf8());
 }
 
 QByteArray Sender::makeUserListResponse(const QList<QByteArray>& userList) {
@@ -279,11 +308,8 @@ QByteArray Sender::makeColorResponse(const QString& targetUser, const QByteArray
 	return makePacket("COLOR_RESPONSE", QList<QByteArray>() << targetUser.toUtf8() << color);
 }
 
-void Sender::send(const QByteArray& packet) {
-	if(connection->isReadyForUse())
-		connection->write(packet);
-}
-
-QString Sender::getUserName() const {
-	return connection->getUserName();
+QByteArray Sender::makeEventsResponse(const TeamRadarEvent& event) {
+	return makePacket("EVENT_RESPONSE", QList<QByteArray>() 
+		<< event.userName.toUtf8() << event.eventType.toUtf8() 
+		<< event.parameters.toUtf8() << event.time.toString().toUtf8());
 }

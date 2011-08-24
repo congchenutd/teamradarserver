@@ -38,13 +38,15 @@ private slots:
 	void onClear();
 	void onAbout();
 	void onExport();
+	void resizeUserTable();
 	void onNewEvent(const QString& user, const QByteArray& message);
 	void onRequestUserList();
 	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
 	void onRegisterColor(const QString& user, const QByteArray& color);
 	void onRequestPhoto (const QString& targetUser);
 	void onRequestColor (const QString& targetUser);
-	void resizeUserTable();
+	void onRequestEvents(const QStringList& users, const QDateTime& startTime, 
+						 const QDateTime& endTime, const QStringList& eventTypes);
 
 private:
 	void createTray();

@@ -21,6 +21,10 @@
 //			Format of parameters: parameter1#parameter2#...
 //		REGISTER_COLOR: color
 //		REQUEST_COLOR: target user name
+//		REQUEST_EVENTS: user list#time span#event types
+//			user list: name1;name2;...
+//			time span: start time - end time
+//			event types: type1;type2;...
 
 class Connection;
 class Sender;
@@ -38,7 +42,8 @@ public:
 		RegisterPhoto,
 		RegisterColor,
 		RequestPhoto,
-		RequestColor
+		RequestColor,
+		RequestEvents
 	} DataType;
 
 public:
@@ -55,9 +60,12 @@ signals:
 	void requestColor(const QString& targetUser);
 	void registerPhoto(const QString& user, const QByteArray& photo);
 	void registerColor(const QString& user, const QByteArray& color);
+	void requestEvents(const QStringList& users, const QDateTime& startTime, 
+					   const QDateTime& endTime, const QStringList& eventTypes);
 
 private:
 	void receiveGreeting(const QByteArray& buffer);
+	void receiveEvents  (const QByteArray& buffer);
 
 private:
 	Connection* connection;
@@ -103,6 +111,9 @@ private:
 public:
 	static const int  MaxBufferSize   = 1024 * 1024;   // 1KB
 	static const int  TransferTimeout = 30 * 1000;
+	static const char Delimiter1 = '#';
+	static const char Delimiter2 = ';';
+	static const char Delimiter3 = ',';
 
 private:
 	Receiver::DataType dataType;
@@ -123,11 +134,12 @@ private:
 // Format of body:
 //		PHOTO_RESPONSE: [filename#binary photo data]/[empty]
 //		USERLIST_RESPONSE: username1#username2#...
-//		EVENT: user#event#[parameters]
+//		EVENT: user#event#[parameters]#time
 //			Format of parameters: parameter1#parameter2#...
 //		COLOR_RESPONSE: targetUser#color
+//		EVENT_RESPONSE: same as event
 
-//	Formatting and sending are separated for flexibility
+//	Formatting (makeXXX) and sending (send) are separated for flexibility
 
 struct TeamRadarEvent;
 class Sender : public QObject
@@ -144,6 +156,7 @@ public:
 	static QByteArray makeUserListResponse(const QList<QByteArray>& userList);
 	static QByteArray makePhotoResponse(const QString& fileName,   const QByteArray& photoData);
 	static QByteArray makeColorResponse(const QString& targetUser, const QByteArray& color);
+	static QByteArray makeEventsResponse(const TeamRadarEvent& event);
 
 private:
 	Connection* connection;
@@ -151,13 +164,16 @@ private:
 
 struct TeamRadarEvent
 {
-	TeamRadarEvent::TeamRadarEvent(const QString& name, const QString& event, const QString& para = QString())
-		: userName(name), eventType(event), parameter(para)
-	{}
+	TeamRadarEvent::TeamRadarEvent(const QString& name, const QString& event, 
+								   const QString& para = QString(), const QString& t = QString())
+		: userName(name), eventType(event), parameters(para)	{
+		time = t.isEmpty() ? QDateTime::currentDateTime() : QDateTime::fromString(t);
+	}
 
-	QString userName;
-	QString eventType;
-	QString parameter;
+	QString   userName;
+	QString   eventType;
+	QString   parameters;
+	QDateTime time;
 };
 
 #endif // CONNECTION_H
