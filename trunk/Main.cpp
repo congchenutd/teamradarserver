@@ -12,5 +12,6 @@ int main(int argc, char *argv[])
 	app.setQuitOnLastWindowClosed(false);
 	MainWnd wnd;
 	wnd.show();
+
 	return app.exec();
 }

@@ -1,5 +1,6 @@
 #include "MainWnd.h"
 #include "Connection.h"
+#include "../ImageColorBoolModel/ImageColorBoolModel.h"
 #include "../ImageColorBoolModel/ImageColorBoolDelegate.h"
 #include <QMessageBox>
 #include <QCloseEvent>
@@ -32,13 +33,18 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	UsersModel::makeAllOffline();
 	modelUsers.setTable("Users");
 	modelUsers.select();
-	modelUsers.setColumnType(modelUsers.USERNAME, modelUsers.NameColumn);
-	modelUsers.setColumnType(modelUsers.COLOR,    modelUsers.ColorColumn);
-	modelUsers.setColumnType(modelUsers.IMAGE,    modelUsers.ImageColumn);
-	modelUsers.setColumnType(modelUsers.ONLINE,   modelUsers.BoolColumn);
-	modelUsers.setGrayImageBy(modelUsers.ONLINE);
 	modelUsers.setSort(modelUsers.ONLINE, Qt::DescendingOrder);   // "true" before "false"
-	ui.tvUsers->setModel(&modelUsers);
+
+	ImageColorBoolProxy* proxy = new ImageColorBoolProxy(this);
+	proxy->setSourceModel(&modelUsers);
+	proxy->setColumnType(modelUsers.USERNAME, proxy->NameColumn);
+	proxy->setColumnType(modelUsers.COLOR,    proxy->ColorColumn);
+	proxy->setColumnType(modelUsers.IMAGE,    proxy->ImageColumn);
+	proxy->setColumnType(modelUsers.ONLINE,   proxy->BoolColumn);
+	proxy->setGrayImageBy(modelUsers.ONLINE);
+	proxy->setImageColumn(modelUsers.IMAGE);
+
+	ui.tvUsers->setModel(proxy);
 	ui.tvUsers->hideColumn(modelUsers.ONLINE);
 	ui.tvUsers->hideColumn(modelUsers.IMAGE);
 	resizeUserTable();
@@ -118,6 +124,8 @@ void MainWnd::onReadyForUse()
 	connect(receiver, SIGNAL(registerColor(QString, QByteArray)), this, SLOT(onRegisterColor(QString, QByteArray)));
 	connect(receiver, SIGNAL(requestPhoto(QString)), this, SLOT(onRequestPhoto(QString)));
 	connect(receiver, SIGNAL(requestColor(QString)), this, SLOT(onRequestColor(QString)));
+	connect(receiver, SIGNAL(requestEvents(QStringList, QDateTime, QDateTime, QStringList)),
+			this,     SLOT(onRequestEvents(QStringList, QDateTime, QDateTime, QStringList)));
 
 	// new client
 	connections.insert(connection->getUserName(), connection);
@@ -178,8 +186,8 @@ void MainWnd::onPortChanged(int port)
 
 void MainWnd::onNewEvent(const QString& user, const QByteArray& message)
 {
-	QByteArray event      = message.split('#').at(0);
-	QByteArray parameters = message.split('#').at(1);
+	QByteArray event      = message.split(Connection::Delimiter1).at(0);
+	QByteArray parameters = message.split(Connection::Delimiter1).at(1);
 	broadcast(TeamRadarEvent(user, event, parameters));
 }
 
@@ -188,10 +196,10 @@ void MainWnd::log(const TeamRadarEvent& event)
 	int lastRow = modelLogs.rowCount();
 	modelLogs.insertRow(lastRow);
 	modelLogs.setData(modelLogs.index(lastRow, ID),         getNextID("Logs", "ID"));
-	modelLogs.setData(modelLogs.index(lastRow, TIME),       QDateTime::currentDateTime().toString(Qt::ISODate));
+	modelLogs.setData(modelLogs.index(lastRow, TIME),       event.time.toString());
 	modelLogs.setData(modelLogs.index(lastRow, CLIENT),     event.userName);
 	modelLogs.setData(modelLogs.index(lastRow, EVENT),      event.eventType);
-	modelLogs.setData(modelLogs.index(lastRow, PARAMETERS), event.parameter);
+	modelLogs.setData(modelLogs.index(lastRow, PARAMETERS), event.parameters);
 	modelLogs.submitAll();
 	ui.tvLogs->resizeColumnsToContents();
 }
@@ -240,9 +248,9 @@ void MainWnd::onExport()
 	QTextStream os(&file);
 	modelLogs.sort(TIME, Qt::AscendingOrder);
 	for(int i=0; i<modelLogs.rowCount(); ++i)
-		os << modelLogs.data(modelLogs.index(i, TIME)).toString() << "#"
-		   << modelLogs.data(modelLogs.index(i, CLIENT)).toString().split('@').front() << "#"
-		   << modelLogs.data(modelLogs.index(i, EVENT)).toString() << "#"
+		os << modelLogs.data(modelLogs.index(i, TIME))  .toString() << Connection::Delimiter1
+		   << modelLogs.data(modelLogs.index(i, CLIENT)).toString() << Connection::Delimiter1
+		   << modelLogs.data(modelLogs.index(i, EVENT)) .toString() << Connection::Delimiter1
 		   << modelLogs.data(modelLogs.index(i, PARAMETERS)).toString() << "\r\n";
 	modelLogs.sort(TIME, Qt::DescendingOrder);
 }
@@ -262,7 +270,7 @@ void MainWnd::onRequestUserList()
 
 void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
 {
-	int seperator = photoData.indexOf('#');
+	int seperator = photoData.indexOf(Connection::Delimiter1);
 	if(seperator == -1)
 		return;
 
@@ -321,6 +329,29 @@ void MainWnd::resizeUserTable()
 {
 	ui.tvUsers->resizeRowsToContents();
 	ui.tvUsers->resizeColumnsToContents();
+}
+
+void MainWnd::onRequestEvents(const QStringList& users, const QDateTime& startTime, 
+							  const QDateTime& endTime, const QStringList& eventTypes)
+{
+	QString userClause  = "\"" + users.     join("\", \"") + "\"";
+	QString eventClause = "\"" + eventTypes.join("\", \"") + "\"";
+	QSqlQuery query;
+	query.exec(tr("select Client, Event, Parameters, Time from Logs \
+				  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
+		.arg(userClause).arg(eventClause).arg(startTime.toString()).arg(endTime.toString()));
+	QString test = tr("select Client, Event, Parameters, Time from Logs \
+					  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
+					  .arg(userClause).arg(eventClause).arg(startTime.toString()).arg(endTime.toString());
+	
+	Receiver* receiver = qobject_cast<Receiver*>(sender());
+	Sender* sender = receiver->getSender();
+	while(query.next())
+		sender->send(Sender::makeEventsResponse(
+							TeamRadarEvent(query.value(0).toString(),
+										   query.value(1).toString(),
+										   query.value(2).toString(),
+										   query.value(3).toString())));
 }
 
 int getNextID(const QString& tableName, const QString& sectionName)
