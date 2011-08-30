@@ -176,6 +176,8 @@ Receiver::DataType Receiver::guessDataType(const QByteArray& header)
 		return RequestColor;
 	if(header.startsWith("REQUEST_EVENTS"))
 		return RequestEvents;
+	if(header.startsWith("CHAT"))
+		return Chat;
 	return Undefined;
 }
 
@@ -183,7 +185,7 @@ void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer
 {
 	// before connected
 	if(dataType == Greeting)
-		return receiveGreeting(buffer);
+		return parseGreeting(buffer);
 
 	// after connected
 	QString userName = connection->getUserName();
@@ -208,14 +210,17 @@ void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer
 		emit requestColor(buffer);
 		break;
 	case RequestEvents:
-		receiveEvents(buffer);
+		parseEvents(buffer);
+		break;
+	case Chat:
+		parseChat(buffer);
 		break;
 	default:
 		break;
 	}
 }
 
-void Receiver::receiveGreeting(const QByteArray& buffer)
+void Receiver::parseGreeting(const QByteArray& buffer)
 {
 	QString userName = buffer;
 	connection->setUserName(userName);
@@ -243,19 +248,28 @@ QString Receiver::getUserName() const {
 	return connection->getUserName();
 }
 
-void Receiver::receiveEvents(const QByteArray& buffer)
+void Receiver::parseEvents(const QByteArray& buffer)
 {
 	QList<QByteArray> sections = buffer.split(Connection::Delimiter1);
 	if(sections.size() != 3)
 		return;
 
-	QStringList users = QString(sections[0]).split(';');
+	QStringList users = QString(sections[0]).split(Connection::Delimiter2);
 	QString startTime = sections[1].split('-').at(0);
 	QString endTime   = sections[1].split('-').at(1);
-	QStringList events = QString(sections[2]).split(';');
+	QStringList events = QString(sections[2]).split(Connection::Delimiter2);
 	emit requestEvents(users, QDateTime::fromString(startTime), QDateTime::fromString(endTime), events);
 }
 
+void Receiver::parseChat(const QByteArray& buffer)
+{
+	QList<QByteArray> sections = buffer.split(Connection::Delimiter1);
+	if(sections.size() != 2)
+		return;
+
+	QStringList recipients = QString(sections[0]).split(Connection::Delimiter2);
+	emit chatMessage(recipients, sections[1]);
+}
 
 //////////////////////////////////////////////////////////////////////////
 Sender::Sender(Connection* c) {
@@ -312,4 +326,8 @@ QByteArray Sender::makeEventsResponse(const TeamRadarEvent& event) {
 	return makePacket("EVENT_RESPONSE", QList<QByteArray>() 
 		<< event.userName.toUtf8() << event.eventType.toUtf8() 
 		<< event.parameters.toUtf8() << event.time.toString().toUtf8());
+}
+
+QByteArray Sender::makeChatPacket(const QString& user, const QByteArray& content) {
+	return makePacket("CHAT", QList<QByteArray>() << user.toUtf8() << content);
 }

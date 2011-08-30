@@ -126,6 +126,7 @@ void MainWnd::onReadyForUse()
 	connect(receiver, SIGNAL(requestColor(QString)), this, SLOT(onRequestColor(QString)));
 	connect(receiver, SIGNAL(requestEvents(QStringList, QDateTime, QDateTime, QStringList)),
 			this,     SLOT(onRequestEvents(QStringList, QDateTime, QDateTime, QStringList)));
+	connect(receiver, SIGNAL(chatMessage(QStringList, QByteArray)),	this, SLOT(onChat(QStringList, QByteArray)));
 
 	// new client
 	connections.insert(connection->getUserName(), connection);
@@ -215,6 +216,14 @@ void MainWnd::broadcast(const TeamRadarEvent& event)
 {
 	broadcast(event.userName, Sender::makeEventPacket(event));
 	log(event);
+}
+
+
+void MainWnd::multicast(const QString& source, const QStringList& recipient, const QByteArray& packet)
+{
+	foreach(Connection* connection, connections)
+		if(connection->getUserName() != source && recipient.contains(connection->getUserName()))
+			connection->getSender()->send(packet);
 }
 
 void MainWnd::onClear()
@@ -352,6 +361,13 @@ void MainWnd::onRequestEvents(const QStringList& users, const QDateTime& startTi
 										   query.value(1).toString(),
 										   query.value(2).toString(),
 										   query.value(3).toString())));
+}
+
+void MainWnd::onChat(const QStringList& recipients, const QByteArray& content)
+{
+	Receiver* receiver = qobject_cast<Receiver*>(sender());
+	QString sourceName = receiver->getUserName();
+	multicast(sourceName, recipients, Sender::makeChatPacket(sourceName, content));
 }
 
 int getNextID(const QString& tableName, const QString& sectionName)
