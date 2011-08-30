@@ -25,6 +25,8 @@
 //			user list: name1;name2;...
 //			time span: start time - end time
 //			event types: type1;type2;...
+//		CHAT: recipients#content
+//			recipients = name1;name2;...
 
 class Connection;
 class Sender;
@@ -43,7 +45,8 @@ public:
 		RegisterColor,
 		RequestPhoto,
 		RequestColor,
-		RequestEvents
+		RequestEvents,
+		Chat
 	} DataType;
 
 public:
@@ -62,10 +65,12 @@ signals:
 	void registerColor(const QString& user, const QByteArray& color);
 	void requestEvents(const QStringList& users, const QDateTime& startTime, 
 					   const QDateTime& endTime, const QStringList& eventTypes);
+	void chatMessage(const QStringList& recipients, const QByteArray& content);
 
 private:
-	void receiveGreeting(const QByteArray& buffer);
-	void receiveEvents  (const QByteArray& buffer);
+	void parseGreeting(const QByteArray& buffer);
+	void parseEvents  (const QByteArray& buffer);
+	void parseChat    (const QByteArray& buffer);
 
 private:
 	Connection* connection;
@@ -138,6 +143,7 @@ private:
 //			Format of parameters: parameter1#parameter2#...
 //		COLOR_RESPONSE: targetUser#color
 //		EVENT_RESPONSE: same as event
+//		CHAT: peerName#content
 
 //	Formatting (makeXXX) and sending (send) are separated for flexibility
 
@@ -157,6 +163,7 @@ public:
 	static QByteArray makePhotoResponse(const QString& fileName,   const QByteArray& photoData);
 	static QByteArray makeColorResponse(const QString& targetUser, const QByteArray& color);
 	static QByteArray makeEventsResponse(const TeamRadarEvent& event);
+	static QByteArray makeChatPacket(const QString& user, const QByteArray& content);
 
 private:
 	Connection* connection;

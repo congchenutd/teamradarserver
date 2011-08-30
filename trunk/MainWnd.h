@@ -47,6 +47,7 @@ private slots:
 	void onRequestColor (const QString& targetUser);
 	void onRequestEvents(const QStringList& users, const QDateTime& startTime, 
 						 const QDateTime& endTime, const QStringList& eventTypes);
+	void onChat(const QStringList& recipients, const QByteArray& content);
 
 private:
 	void createTray();
@@ -58,6 +59,7 @@ private:
 
 	void broadcast(const QString& sourceUser, const QByteArray& packet);
 	void broadcast(const TeamRadarEvent& event);
+	void multicast(const QString& source, const QStringList& recipient, const QByteArray& packet);
 	void log      (const TeamRadarEvent& event);
 
 public:
