@@ -1,4 +1,5 @@
 #include "Connection.h"
+#include "MainWnd.h"
 #include <QHostAddress>
 #include <QTimerEvent>
 #include <QColor>
@@ -255,10 +256,11 @@ void Receiver::parseEvents(const QByteArray& buffer)
 		return;
 
 	QStringList users = QString(sections[0]).split(Connection::Delimiter2);
-	QString startTime = sections[1].split('-').at(0);
-	QString endTime   = sections[1].split('-').at(1);
-	QStringList events = QString(sections[2]).split(Connection::Delimiter2);
-	emit requestEvents(users, QDateTime::fromString(startTime), QDateTime::fromString(endTime), events);
+	QStringList events = QString(sections[1]).split(Connection::Delimiter2);
+	QString startTime = sections[2].split(Connection::Delimiter2).at(0);
+	QString endTime   = sections[2].split(Connection::Delimiter2).at(1);
+	emit requestEvents(users, events, QDateTime::fromString(startTime, MainWnd::dateTimeFormat), 
+									  QDateTime::fromString(endTime,   MainWnd::dateTimeFormat));
 }
 
 void Receiver::parseChat(const QByteArray& buffer)
@@ -307,7 +309,7 @@ QByteArray Sender::makeEventPacket(const TeamRadarEvent& event) {
 	return makePacket("EVENT", QList<QByteArray>() << event.userName.toUtf8()
 												   << event.eventType.toUtf8()
 												   << event.parameters.toUtf8()
-												   << event.time.toString().toUtf8());
+												   << event.time.toString(MainWnd::dateTimeFormat).toUtf8());
 }
 
 QByteArray Sender::makeUserListResponse(const QList<QByteArray>& userList) {
@@ -325,7 +327,7 @@ QByteArray Sender::makeColorResponse(const QString& targetUser, const QByteArray
 QByteArray Sender::makeEventsResponse(const TeamRadarEvent& event) {
 	return makePacket("EVENT_RESPONSE", QList<QByteArray>() 
 		<< event.userName.toUtf8() << event.eventType.toUtf8() 
-		<< event.parameters.toUtf8() << event.time.toString().toUtf8());
+		<< event.parameters.toUtf8() << event.time.toString(MainWnd::dateTimeFormat).toUtf8());
 }
 
 QByteArray Sender::makeChatPacket(const QString& user, const QByteArray& content) {

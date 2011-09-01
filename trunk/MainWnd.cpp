@@ -124,8 +124,8 @@ void MainWnd::onReadyForUse()
 	connect(receiver, SIGNAL(registerColor(QString, QByteArray)), this, SLOT(onRegisterColor(QString, QByteArray)));
 	connect(receiver, SIGNAL(requestPhoto(QString)), this, SLOT(onRequestPhoto(QString)));
 	connect(receiver, SIGNAL(requestColor(QString)), this, SLOT(onRequestColor(QString)));
-	connect(receiver, SIGNAL(requestEvents(QStringList, QDateTime, QDateTime, QStringList)),
-			this,     SLOT(onRequestEvents(QStringList, QDateTime, QDateTime, QStringList)));
+	connect(receiver, SIGNAL(requestEvents(QStringList, QStringList, QDateTime, QDateTime)),
+			this,     SLOT(onRequestEvents(QStringList, QStringList, QDateTime, QDateTime)));
 	connect(receiver, SIGNAL(chatMessage(QStringList, QByteArray)),	this, SLOT(onChat(QStringList, QByteArray)));
 
 	// new client
@@ -197,7 +197,7 @@ void MainWnd::log(const TeamRadarEvent& event)
 	int lastRow = modelLogs.rowCount();
 	modelLogs.insertRow(lastRow);
 	modelLogs.setData(modelLogs.index(lastRow, ID),         getNextID("Logs", "ID"));
-	modelLogs.setData(modelLogs.index(lastRow, TIME),       event.time.toString());
+	modelLogs.setData(modelLogs.index(lastRow, TIME),       event.time.toString(dateTimeFormat));
 	modelLogs.setData(modelLogs.index(lastRow, CLIENT),     event.userName);
 	modelLogs.setData(modelLogs.index(lastRow, EVENT),      event.eventType);
 	modelLogs.setData(modelLogs.index(lastRow, PARAMETERS), event.parameters);
@@ -340,18 +340,19 @@ void MainWnd::resizeUserTable()
 	ui.tvUsers->resizeColumnsToContents();
 }
 
-void MainWnd::onRequestEvents(const QStringList& users, const QDateTime& startTime, 
-							  const QDateTime& endTime, const QStringList& eventTypes)
+void MainWnd::onRequestEvents(const QStringList& users, const QStringList& eventTypes,
+							  const QDateTime& startTime, const QDateTime& endTime)
 {
 	QString userClause  = "\"" + users.     join("\", \"") + "\"";
 	QString eventClause = "\"" + eventTypes.join("\", \"") + "\"";
 	QSqlQuery query;
 	query.exec(tr("select Client, Event, Parameters, Time from Logs \
 				  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
-		.arg(userClause).arg(eventClause).arg(startTime.toString()).arg(endTime.toString()));
+		.arg(userClause).arg(eventClause).arg(startTime.toString(dateTimeFormat)).arg(endTime.toString(dateTimeFormat)));
+
 	QString test = tr("select Client, Event, Parameters, Time from Logs \
 					  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
-					  .arg(userClause).arg(eventClause).arg(startTime.toString()).arg(endTime.toString());
+					  .arg(userClause).arg(eventClause).arg(startTime.toString(dateTimeFormat)).arg(endTime.toString(dateTimeFormat));
 	
 	Receiver* receiver = qobject_cast<Receiver*>(sender());
 	Sender* sender = receiver->getSender();
@@ -369,6 +370,8 @@ void MainWnd::onChat(const QStringList& recipients, const QByteArray& content)
 	QString sourceName = receiver->getUserName();
 	multicast(sourceName, recipients, Sender::makeChatPacket(sourceName, content));
 }
+
+const QString MainWnd::dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
 
 int getNextID(const QString& tableName, const QString& sectionName)
 {
