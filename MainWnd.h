@@ -39,8 +39,9 @@ private slots:
 	void onAbout();
 	void onExport();
 	void resizeUserTable();
-	void onNewEvent(const QString& user, const QByteArray& message);
 	void onRequestUserList();
+	void onRequestTimeSpan();
+	void onNewEvent(const QString& user, const QByteArray& message);
 	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
 	void onRegisterColor(const QString& user, const QByteArray& color);
 	void onRequestPhoto (const QString& targetUser);

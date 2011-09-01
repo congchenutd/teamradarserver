@@ -118,8 +118,9 @@ void MainWnd::onReadyForUse()
 		return;
 
 	Receiver* receiver = connection->getReceiver();
+	connect(receiver, SIGNAL(requestUserList()), this, SLOT(onRequestUserList()));
+	connect(receiver, SIGNAL(requestTimeSpan()), this, SLOT(onRequestTimeSpan()));
 	connect(receiver, SIGNAL(newEvent(QString, QByteArray)), this, SLOT(onNewEvent(QString, QByteArray)));
-	connect(receiver, SIGNAL(requestUserList()),             this, SLOT(onRequestUserList()));
 	connect(receiver, SIGNAL(registerPhoto(QString, QByteArray)), this, SLOT(onRegisterPhoto(QString, QByteArray)));
 	connect(receiver, SIGNAL(registerColor(QString, QByteArray)), this, SLOT(onRegisterColor(QString, QByteArray)));
 	connect(receiver, SIGNAL(requestPhoto(QString)), this, SLOT(onRequestPhoto(QString)));
@@ -275,6 +276,20 @@ void MainWnd::onRequestUserList()
 	Sender* sender = receiver->getSender();
 	sender->send(sender->makeUserListResponse(users));
 	log(TeamRadarEvent(receiver->getUserName(), "Request user list"));
+}
+
+void MainWnd::onRequestTimeSpan()
+{
+	QSqlQuery query;
+	query.exec("select min(Time), max(Time) from Logs");
+	if(query.next())
+	{
+		QByteArray start = query.value(0).toString().toUtf8();
+		QByteArray end   = query.value(1).toString().toUtf8();
+		Receiver* receiver = qobject_cast<Receiver*>(sender());
+		Sender* sender = receiver->getSender();
+		sender->send(sender->makeTimeSpanResponse(start, end));
+	}
 }
 
 void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)

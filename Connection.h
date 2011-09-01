@@ -9,8 +9,6 @@
 #include "MainWnd.h"
 
 // Parses the message header & body from Connection
-// Headers accepted: GREETING, REGISTER_PHOTO, REQUEST_USERLIST, REQUEST_PHOTO, EVENT, 
-//					 REGISTER_COLOR, REQUEST_COLOR
 // Clients do not send their user names, as they have signed up with GREETING.
 // Format of packet: header#size#body
 // Format of body:
@@ -28,6 +26,7 @@
 //			time span: start time;end time
 //		CHAT: recipients#content
 //			recipients = name1;name2;...
+//		REQUEST_TIMESPAN: [empty]
 
 class Connection;
 class Sender;
@@ -47,7 +46,8 @@ public:
 		RequestPhoto,
 		RequestColor,
 		RequestEvents,
-		Chat
+		Chat,
+		RequestTimeSpan
 	} DataType;
 
 public:
@@ -67,6 +67,7 @@ signals:
 	void requestEvents(const QStringList& users, const QStringList& eventTypes,
 					   const QDateTime& startTime, const QDateTime& endTime);
 	void chatMessage(const QStringList& recipients, const QByteArray& content);
+	void requestTimeSpan();
 
 private:
 	void parseGreeting(const QByteArray& buffer);
@@ -135,7 +136,6 @@ private:
 };
 
 // Format and send packets
-// Headers: PHOTO_RESPONSE, USERLIST_RESPONSE, EVENT, COLOR_RESPONSE
 // Format of packet: header#size#body
 // Format of body:
 //		PHOTO_RESPONSE: [filename#binary photo data]/[empty]
@@ -145,6 +145,7 @@ private:
 //		COLOR_RESPONSE: targetUser#color
 //		EVENT_RESPONSE: same as event
 //		CHAT: peerName#content
+//		TIMESPAN_RESPONSE: start#end
 
 //	Formatting (makeXXX) and sending (send) are separated for flexibility
 
@@ -165,6 +166,7 @@ public:
 	static QByteArray makeColorResponse(const QString& targetUser, const QByteArray& color);
 	static QByteArray makeEventsResponse(const TeamRadarEvent& event);
 	static QByteArray makeChatPacket(const QString& user, const QByteArray& content);
+	static QByteArray makeTimeSpanResponse(const QByteArray& start, const QByteArray& end);
 
 private:
 	Connection* connection;
