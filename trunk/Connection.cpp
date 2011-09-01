@@ -179,6 +179,8 @@ Receiver::DataType Receiver::guessDataType(const QByteArray& header)
 		return RequestEvents;
 	if(header.startsWith("CHAT"))
 		return Chat;
+	if(header.startsWith("REQUEST_TIMESPAN"))
+		return RequestTimeSpan;
 	return Undefined;
 }
 
@@ -215,6 +217,9 @@ void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer
 		break;
 	case Chat:
 		parseChat(buffer);
+		break;
+	case RequestTimeSpan:
+		emit requestTimeSpan();
 		break;
 	default:
 		break;
@@ -326,10 +331,14 @@ QByteArray Sender::makeColorResponse(const QString& targetUser, const QByteArray
 
 QByteArray Sender::makeEventsResponse(const TeamRadarEvent& event) {
 	return makePacket("EVENT_RESPONSE", QList<QByteArray>() 
-		<< event.userName.toUtf8() << event.eventType.toUtf8() 
+		<< event.userName.toUtf8()   << event.eventType.toUtf8() 
 		<< event.parameters.toUtf8() << event.time.toString(MainWnd::dateTimeFormat).toUtf8());
 }
 
 QByteArray Sender::makeChatPacket(const QString& user, const QByteArray& content) {
 	return makePacket("CHAT", QList<QByteArray>() << user.toUtf8() << content);
+}
+
+QByteArray Sender::makeTimeSpanResponse(const QByteArray& start, const QByteArray& end) {
+	return makePacket("TIMESPAN_RESPONSE", QList<QByteArray>() << start << end);
 }
