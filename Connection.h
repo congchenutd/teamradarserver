@@ -6,6 +6,7 @@
 #include <QTime>
 #include <QStringList>
 #include <QSet>
+#include "MainWnd.h"
 
 // Parses the message header & body from Connection
 // Headers accepted: GREETING, REGISTER_PHOTO, REQUEST_USERLIST, REQUEST_PHOTO, EVENT, 
@@ -23,8 +24,8 @@
 //		REQUEST_COLOR: target user name
 //		REQUEST_EVENTS: user list#time span#event types
 //			user list: name1;name2;...
-//			time span: start time - end time
 //			event types: type1;type2;...
+//			time span: start time;end time
 //		CHAT: recipients#content
 //			recipients = name1;name2;...
 
@@ -63,8 +64,8 @@ signals:
 	void requestColor(const QString& targetUser);
 	void registerPhoto(const QString& user, const QByteArray& photo);
 	void registerColor(const QString& user, const QByteArray& color);
-	void requestEvents(const QStringList& users, const QDateTime& startTime, 
-					   const QDateTime& endTime, const QStringList& eventTypes);
+	void requestEvents(const QStringList& users, const QStringList& eventTypes,
+					   const QDateTime& startTime, const QDateTime& endTime);
 	void chatMessage(const QStringList& recipients, const QByteArray& content);
 
 private:
@@ -171,12 +172,14 @@ private:
 
 struct TeamRadarEvent
 {
-	TeamRadarEvent::TeamRadarEvent(const QString& name, const QString& event, 
-								   const QString& para = QString(), const QString& t = QString())
-		: userName(name), eventType(event), parameters(para)	{
-		time = t.isEmpty() ? QDateTime::currentDateTime() : QDateTime::fromString(t);
+	TeamRadarEvent::TeamRadarEvent(const QString& name, 
+								   const QString& event, 
+								   const QString& para = QString(), 
+								   const QString& t = QString())
+		: userName(name), eventType(event), parameters(para) {
+			time = t.isEmpty() ? QDateTime::currentDateTime() 
+							   : QDateTime::fromString(t, MainWnd::dateTimeFormat);
 	}
-
 	QString   userName;
 	QString   eventType;
 	QString   parameters;
