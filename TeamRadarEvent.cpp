@@ -25,3 +25,7 @@ QString TeamRadarEvent::getPhase() const
 		return "Deployment";
 	return QString();
 }
+
+bool TeamRadarEvent::operator< (const TeamRadarEvent& other) const {
+	return this->time < other.time;
+}

@@ -3,6 +3,7 @@
 #include "TeamRadarEvent.h"
 #include "../ImageColorBoolModel/ImageColorBoolModel.h"
 #include "../ImageColorBoolModel/ImageColorBoolDelegate.h"
+#include "PhaseDivider.h"
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QMenu>
@@ -360,21 +361,30 @@ void MainWnd::onRequestEvents(const QStringList& users, const QStringList& event
 							  const QDateTime& startTime, const QDateTime& endTime,
 							  const QStringList& phases, int fuzziness)
 {
-	//QString userClause  = "\"" + users.     join("\", \"") + "\"";
-	//QString eventClause = "\"" + eventTypes.join("\", \"") + "\"";
-	//QSqlQuery query;
-	//query.exec(tr("select Client, Event, Parameters, Time from Logs \
-	//			  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
-	//	.arg(userClause).arg(eventClause).arg(startTime.toString(dateTimeFormat)).arg(endTime.toString(dateTimeFormat)));
+	// query without phases
+	QString userClause  = "\"" + users.     join("\", \"") + "\"";
+	QString eventClause = "\"" + eventTypes.join("\", \"") + "\"";
+	QSqlQuery query;
+	query.exec(tr("select Client, Event, Parameters, Time from Logs \
+				  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
+		.arg(userClause).arg(eventClause).arg(startTime.toString(dateTimeFormat)).arg(endTime.toString(dateTimeFormat)));
 
-	//Receiver* receiver = qobject_cast<Receiver*>(sender());
-	//Sender* sender = receiver->getSender();
-	//while(query.next())
-	//	sender->send(Sender::makeEventsResponse(
-	//						TeamRadarEvent(query.value(0).toString(),
-	//									   query.value(1).toString(),
-	//									   query.value(2).toString(),
-	//									   query.value(3).toString())));
+	Events events;
+	while(query.next())
+		events << TeamRadarEvent(query.value(0).toString(),
+								 query.value(1).toString(),
+								 query.value(2).toString(),
+								 query.value(3).toString());
+
+	// filter by phases
+	PhaseDivider divider(events, fuzziness);
+	Events dividedEvents = divider.getEvents(phases);
+
+	// send
+	Receiver* receiver = qobject_cast<Receiver*>(sender());
+	Sender* sender = receiver->getSender();
+	foreach(TeamRadarEvent event, dividedEvents)
+		sender->send(Sender::makeEventsResponse(event));
 }
 
 void MainWnd::onChat(const QStringList& recipients, const QByteArray& content)

@@ -1,8 +1,7 @@
 #include "MainWnd.h"
-#include "UsersModel.h"
 #include <QtGui/QApplication>
-#include <QString>
-#include <QDateTime>
+#include <QTextStream>
+#include <QSqlQuery>
 
 int main(int argc, char *argv[])
 {
@@ -15,5 +14,5 @@ int main(int argc, char *argv[])
 	MainWnd wnd;
 	wnd.show();
 
-	return app.exec();
+	return app.exec();		
 }
