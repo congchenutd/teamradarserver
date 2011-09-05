@@ -45,7 +45,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-Zm200 -w34100 -w34189"
 				Optimization="4"
-				AdditionalIncludeDirectories="&quot;$(QTDIR)\include\QtCore&quot;,&quot;$(QTDIR)\include\QtNetwork&quot;,&quot;$(QTDIR)\include\QtGui&quot;,&quot;$(QTDIR)\include\QtSql&quot;,&quot;$(QTDIR)\include&quot;,&quot;.&quot;,&quot;$(QTDIR)\include\ActiveQt&quot;,&quot;debug&quot;,&quot;.&quot;,..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008"
+				AdditionalIncludeDirectories="&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot;,&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot;,&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot;,&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot;,&quot;..\..\..\..\Qt\4.7.4\include&quot;,&quot;.&quot;,&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot;,&quot;debug&quot;,&quot;.&quot;,..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008"
 				PreprocessorDefinitions="_WINDOWS,UNICODE,WIN32,QT_LARGEFILE_SUPPORT,QT_DLL,QT_SQL_LIB,QT_GUI_LIB,QT_NETWORK_LIB,QT_CORE_LIB,QT_HAVE_MMX,QT_HAVE_3DNOW,QT_HAVE_SSE,QT_HAVE_MMXEXT,QT_HAVE_SSE2,QT_THREAD_SUPPORT"
 				GeneratePreprocessedFile="0"
 				ExceptionHandling="1"
@@ -74,14 +74,15 @@
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="true"
 				AdditionalOptions="&quot;/MANIFESTDEPENDENCY:type=&apos;win32&apos; name=&apos;Microsoft.Windows.Common-Controls&apos; version=&apos;6.0.0.0&apos; publicKeyToken=&apos;6595b64144ccf1df&apos; language=&apos;*&apos; processorArchitecture=&apos;*&apos;&quot;"
-				AdditionalDependencies="qtmaind.lib QtSqld4.lib QtGuid4.lib QtNetworkd4.lib QtCored4.lib"
+				AdditionalDependencies="c:\Qt\4.7.4\lib\qtmaind.lib c:\Qt\4.7.4\lib\QtSqld4.lib c:\Qt\4.7.4\lib\QtGuid4.lib c:\Qt\4.7.4\lib\QtNetworkd4.lib c:\Qt\4.7.4\lib\QtCored4.lib"
 				OutputFile="debug\TeamRadarServer.exe"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(QTDIR)\lib"
+				AdditionalLibraryDirectories="c:\Qt\4.7.4\lib"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=""
 				SubSystem="2"
 				LinkTimeCodeGeneration="0"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -135,7 +136,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="-Zm200 -w34100 -w34189"
 				Optimization="2"
-				AdditionalIncludeDirectories="&quot;$(QTDIR)\include\QtCore&quot;,&quot;$(QTDIR)\include\QtNetwork&quot;,&quot;$(QTDIR)\include\QtGui&quot;,&quot;$(QTDIR)\include\QtSql&quot;,&quot;$(QTDIR)\include&quot;,&quot;.&quot;,&quot;$(QTDIR)\include\ActiveQt&quot;,&quot;release&quot;,&quot;.&quot;,..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008"
+				AdditionalIncludeDirectories="&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot;,&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot;,&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot;,&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot;,&quot;..\..\..\..\Qt\4.7.4\include&quot;,&quot;.&quot;,&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot;,&quot;release&quot;,&quot;.&quot;,..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008"
 				PreprocessorDefinitions="QT_NO_DEBUG,NDEBUG,_WINDOWS,UNICODE,WIN32,QT_LARGEFILE_SUPPORT,QT_DLL,QT_NO_DEBUG,QT_SQL_LIB,QT_GUI_LIB,QT_NETWORK_LIB,QT_CORE_LIB,QT_HAVE_MMX,QT_HAVE_3DNOW,QT_HAVE_SSE,QT_HAVE_MMXEXT,QT_HAVE_SSE2,QT_THREAD_SUPPORT,NDEBUG"
 				GeneratePreprocessedFile="0"
 				ExceptionHandling="1"
@@ -164,15 +165,16 @@
 				Name="VCLinkerTool"
 				IgnoreImportLibrary="true"
 				AdditionalOptions="&quot;/MANIFESTDEPENDENCY:type=&apos;win32&apos; name=&apos;Microsoft.Windows.Common-Controls&apos; version=&apos;6.0.0.0&apos; publicKeyToken=&apos;6595b64144ccf1df&apos; language=&apos;*&apos; processorArchitecture=&apos;*&apos;&quot;"
-				AdditionalDependencies="qtmain.lib QtSql4.lib QtGui4.lib QtNetwork4.lib QtCore4.lib"
+				AdditionalDependencies="c:\Qt\4.7.4\lib\qtmain.lib c:\Qt\4.7.4\lib\QtSql4.lib c:\Qt\4.7.4\lib\QtGui4.lib c:\Qt\4.7.4\lib\QtNetwork4.lib c:\Qt\4.7.4\lib\QtCore4.lib"
 				OutputFile="release\TeamRadarServer.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="$(QTDIR)\lib"
+				AdditionalLibraryDirectories="c:\Qt\4.7.4\lib"
 				GenerateDebugInformation="false"
 				ProgramDatabaseFile=""
 				SubSystem="2"
 				LinkTimeCodeGeneration="0"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -210,6 +212,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\ImageColorBoolModel\ImageColorBoolDelegate.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\ImageColorBoolModel\ImageColorBoolModel.cpp"
 				>
 			</File>
@@ -222,11 +228,19 @@
 				>
 			</File>
 			<File
+				RelativePath="PhaseDivider.cpp"
+				>
+			</File>
+			<File
 				RelativePath="Server.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\UsersModel.cpp"
+				RelativePath="TeamRadarEvent.cpp"
+				>
+			</File>
+			<File
+				RelativePath="UsersModel.cpp"
 				>
 			</File>
 		</Filter>
@@ -243,10 +257,10 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Moc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\moc.exe&quot;  &quot;$(InputPath)&quot; -o &quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;  -D_WINDOWS -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT &quot;-I$(QTDIR)\include\QtCore&quot; &quot;-I$(QTDIR)\include\QtNetwork&quot; &quot;-I$(QTDIR)\include\QtGui&quot; &quot;-I$(QTDIR)\include\QtSql&quot; &quot;-I$(QTDIR)\include&quot; &quot;-I.&quot; &quot;-I$(QTDIR)\include\ActiveQt&quot; &quot;-I.\debug&quot; &quot;-I.&quot; &quot;-I.\..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008&quot;&#x0D;&#x0A;"
-						AdditionalDependencies="&quot;$(QTDIR)\bin\moc.exe&quot;;$(InputPath)"
-						Outputs="&quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;"
+						Description="MOC Connection.h"
+						CommandLine="C:\Qt\4.7.4\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot; -I&quot;..\..\..\..\Qt\4.7.4\include&quot; -I&quot;.&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot; -I&quot;debug&quot; -I&quot;.&quot; -I..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008 -D_MSC_VER=1500 -DWIN32 Connection.h -o debug\moc_Connection.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\moc.exe;Connection.h"
+						Outputs="debug\moc_Connection.cpp"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -254,38 +268,20 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Moc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\moc.exe&quot;  &quot;$(InputPath)&quot; -o &quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;  -DQT_NO_DEBUG -DNDEBUG -D_WINDOWS -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT &quot;-I$(QTDIR)\include\QtCore&quot; &quot;-I$(QTDIR)\include\QtNetwork&quot; &quot;-I$(QTDIR)\include\QtGui&quot; &quot;-I$(QTDIR)\include\QtSql&quot; &quot;-I$(QTDIR)\include&quot; &quot;-I.&quot; &quot;-I$(QTDIR)\include\ActiveQt&quot; &quot;-I.\release&quot; &quot;-I.&quot; &quot;-I.\..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008&quot;&#x0D;&#x0A;"
-						AdditionalDependencies="&quot;$(QTDIR)\bin\moc.exe&quot;;$(InputPath)"
-						Outputs="&quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;"
+						Description="MOC Connection.h"
+						CommandLine="C:\Qt\4.7.4\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot; -I&quot;..\..\..\..\Qt\4.7.4\include&quot; -I&quot;.&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot; -I&quot;release&quot; -I&quot;.&quot; -I..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008 -D_MSC_VER=1500 -DWIN32 Connection.h -o release\moc_Connection.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\moc.exe;Connection.h"
+						Outputs="release\moc_Connection.cpp"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\ImageColorBoolModel\ImageColorBoolDelegate.h"
+				>
+			</File>
+			<File
 				RelativePath="..\ImageColorBoolModel\ImageColorBoolModel.h"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description=""
-						CommandLine=""
-						AdditionalDependencies=""
-						Outputs=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description=""
-						CommandLine=""
-						AdditionalDependencies=""
-						Outputs=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="MainWnd.h"
@@ -295,10 +291,10 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Moc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\moc.exe&quot;  &quot;$(InputPath)&quot; -o &quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;  -D_WINDOWS -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT &quot;-I$(QTDIR)\include\QtCore&quot; &quot;-I$(QTDIR)\include\QtNetwork&quot; &quot;-I$(QTDIR)\include\QtGui&quot; &quot;-I$(QTDIR)\include\QtSql&quot; &quot;-I$(QTDIR)\include&quot; &quot;-I.&quot; &quot;-I$(QTDIR)\include\ActiveQt&quot; &quot;-I.\debug&quot; &quot;-I.&quot; &quot;-I.\..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008&quot;&#x0D;&#x0A;"
-						AdditionalDependencies="&quot;$(QTDIR)\bin\moc.exe&quot;;$(InputPath)"
-						Outputs="&quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;"
+						Description="MOC MainWnd.h"
+						CommandLine="C:\Qt\4.7.4\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot; -I&quot;..\..\..\..\Qt\4.7.4\include&quot; -I&quot;.&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot; -I&quot;debug&quot; -I&quot;.&quot; -I..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008 -D_MSC_VER=1500 -DWIN32 MainWnd.h -o debug\moc_MainWnd.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\moc.exe;MainWnd.h"
+						Outputs="debug\moc_MainWnd.cpp"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -306,38 +302,20 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Moc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\moc.exe&quot;  &quot;$(InputPath)&quot; -o &quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;  -DQT_NO_DEBUG -DNDEBUG -D_WINDOWS -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT &quot;-I$(QTDIR)\include\QtCore&quot; &quot;-I$(QTDIR)\include\QtNetwork&quot; &quot;-I$(QTDIR)\include\QtGui&quot; &quot;-I$(QTDIR)\include\QtSql&quot; &quot;-I$(QTDIR)\include&quot; &quot;-I.&quot; &quot;-I$(QTDIR)\include\ActiveQt&quot; &quot;-I.\release&quot; &quot;-I.&quot; &quot;-I.\..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008&quot;&#x0D;&#x0A;"
-						AdditionalDependencies="&quot;$(QTDIR)\bin\moc.exe&quot;;$(InputPath)"
-						Outputs="&quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;"
+						Description="MOC MainWnd.h"
+						CommandLine="C:\Qt\4.7.4\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot; -I&quot;..\..\..\..\Qt\4.7.4\include&quot; -I&quot;.&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot; -I&quot;release&quot; -I&quot;.&quot; -I..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008 -D_MSC_VER=1500 -DWIN32 MainWnd.h -o release\moc_MainWnd.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\moc.exe;MainWnd.h"
+						Outputs="release\moc_MainWnd.cpp"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\MySetting\MySetting.h"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Performing Custom Build Step"
-						CommandLine=""
-						AdditionalDependencies=""
-						Outputs=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Performing Custom Build Step"
-						CommandLine=""
-						AdditionalDependencies=""
-						Outputs=""
-					/>
-				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="PhaseDivider.h"
+				>
 			</File>
 			<File
 				RelativePath="Server.h"
@@ -347,10 +325,10 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Moc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\moc.exe&quot;  &quot;$(InputPath)&quot; -o &quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;  -D_WINDOWS -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT &quot;-I$(QTDIR)\include\QtCore&quot; &quot;-I$(QTDIR)\include\QtNetwork&quot; &quot;-I$(QTDIR)\include\QtGui&quot; &quot;-I$(QTDIR)\include\QtSql&quot; &quot;-I$(QTDIR)\include&quot; &quot;-I.&quot; &quot;-I$(QTDIR)\include\ActiveQt&quot; &quot;-I.\debug&quot; &quot;-I.&quot; &quot;-I.\..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008&quot;&#x0D;&#x0A;"
-						AdditionalDependencies="&quot;$(QTDIR)\bin\moc.exe&quot;;$(InputPath)"
-						Outputs="&quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;"
+						Description="MOC Server.h"
+						CommandLine="C:\Qt\4.7.4\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot; -I&quot;..\..\..\..\Qt\4.7.4\include&quot; -I&quot;.&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot; -I&quot;debug&quot; -I&quot;.&quot; -I..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008 -D_MSC_VER=1500 -DWIN32 Server.h -o debug\moc_Server.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\moc.exe;Server.h"
+						Outputs="debug\moc_Server.cpp"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -358,25 +336,29 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Moc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\moc.exe&quot;  &quot;$(InputPath)&quot; -o &quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;  -DQT_NO_DEBUG -DNDEBUG -D_WINDOWS -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT &quot;-I$(QTDIR)\include\QtCore&quot; &quot;-I$(QTDIR)\include\QtNetwork&quot; &quot;-I$(QTDIR)\include\QtGui&quot; &quot;-I$(QTDIR)\include\QtSql&quot; &quot;-I$(QTDIR)\include&quot; &quot;-I.&quot; &quot;-I$(QTDIR)\include\ActiveQt&quot; &quot;-I.\release&quot; &quot;-I.&quot; &quot;-I.\..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008&quot;&#x0D;&#x0A;"
-						AdditionalDependencies="&quot;$(QTDIR)\bin\moc.exe&quot;;$(InputPath)"
-						Outputs="&quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;"
+						Description="MOC Server.h"
+						CommandLine="C:\Qt\4.7.4\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot; -I&quot;..\..\..\..\Qt\4.7.4\include&quot; -I&quot;.&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot; -I&quot;release&quot; -I&quot;.&quot; -I..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008 -D_MSC_VER=1500 -DWIN32 Server.h -o release\moc_Server.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\moc.exe;Server.h"
+						Outputs="release\moc_Server.cpp"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\UsersModel.h"
+				RelativePath="TeamRadarEvent.h"
+				>
+			</File>
+			<File
+				RelativePath="UsersModel.h"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Moc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\moc.exe&quot;  &quot;$(InputPath)&quot; -o &quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;  -D_WINDOWS -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT &quot;-I$(QTDIR)\include\QtCore&quot; &quot;-I$(QTDIR)\include\QtNetwork&quot; &quot;-I$(QTDIR)\include\QtGui&quot; &quot;-I$(QTDIR)\include\QtSql&quot; &quot;-I$(QTDIR)\include&quot; &quot;-I.&quot; &quot;-I$(QTDIR)\include\ActiveQt&quot; &quot;-I.\debug&quot; &quot;-I.&quot; &quot;-I.\..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008&quot;&#x0D;&#x0A;"
-						AdditionalDependencies="&quot;$(QTDIR)\bin\moc.exe&quot;;$(InputPath)"
-						Outputs="&quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;"
+						Description="MOC UsersModel.h"
+						CommandLine="C:\Qt\4.7.4\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot; -I&quot;..\..\..\..\Qt\4.7.4\include&quot; -I&quot;.&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot; -I&quot;debug&quot; -I&quot;.&quot; -I..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008 -D_MSC_VER=1500 -DWIN32 UsersModel.h -o debug\moc_UsersModel.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\moc.exe;UsersModel.h"
+						Outputs="debug\moc_UsersModel.cpp"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -384,10 +366,10 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Moc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\moc.exe&quot;  &quot;$(InputPath)&quot; -o &quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;  -DQT_NO_DEBUG -DNDEBUG -D_WINDOWS -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT &quot;-I$(QTDIR)\include\QtCore&quot; &quot;-I$(QTDIR)\include\QtNetwork&quot; &quot;-I$(QTDIR)\include\QtGui&quot; &quot;-I$(QTDIR)\include\QtSql&quot; &quot;-I$(QTDIR)\include&quot; &quot;-I.&quot; &quot;-I$(QTDIR)\include\ActiveQt&quot; &quot;-I.\release&quot; &quot;-I.&quot; &quot;-I.\..\..\..\..\Qt\4.7.3\mkspecs\win32-msvc2008&quot;&#x0D;&#x0A;"
-						AdditionalDependencies="&quot;$(QTDIR)\bin\moc.exe&quot;;$(InputPath)"
-						Outputs="&quot;$(ConfigurationName)\moc_$(InputName).cpp&quot;"
+						Description="MOC UsersModel.h"
+						CommandLine="C:\Qt\4.7.4\bin\moc.exe  -DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_DLL -DQT_NO_DEBUG -DQT_SQL_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB -DQT_HAVE_MMX -DQT_HAVE_3DNOW -DQT_HAVE_SSE -DQT_HAVE_MMXEXT -DQT_HAVE_SSE2 -DQT_THREAD_SUPPORT -I&quot;..\..\..\..\Qt\4.7.4\include\QtCore&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtNetwork&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtGui&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\QtSql&quot; -I&quot;..\..\..\..\Qt\4.7.4\include&quot; -I&quot;.&quot; -I&quot;..\..\..\..\Qt\4.7.4\include\ActiveQt&quot; -I&quot;release&quot; -I&quot;.&quot; -I..\..\..\..\Qt\4.7.4\mkspecs\win32-msvc2008 -D_MSC_VER=1500 -DWIN32 UsersModel.h -o release\moc_UsersModel.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\moc.exe;UsersModel.h"
+						Outputs="release\moc_UsersModel.cpp"
 					/>
 				</FileConfiguration>
 			</File>
@@ -398,159 +380,153 @@
 			UniqueIdentifier="{71ED8ED8-ACB9-4CE9-BBE1-E00B30144E11}"
 			>
 			<File
-				RelativePath=".\GeneratedFiles\qrc_MainWnd.cpp"
+				RelativePath="debug\moc_Connection.cpp"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="release\moc_Connection.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
+					ExcludedFromBuild="true"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="debug\moc_MainWnd.cpp"
+				>
 				<FileConfiguration
 					Name="Release|Win32"
+					ExcludedFromBuild="true"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="release\moc_MainWnd.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="release\moc_Server.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="debug\moc_Server.cpp"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="debug\moc_UsersModel.cpp"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="release\moc_UsersModel.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="debug\qrc_MainWnd.cpp"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="release\qrc_MainWnd.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="debug\TeamRadarServer.res"
+				>
+				<FileConfiguration
+					Name="Release|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="release\TeamRadarServer.res"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="ui_MainWnd.h"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Performing Custom Build Step"
-						CommandLine=""
-						AdditionalDependencies=""
-						Outputs=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-						Description="Performing Custom Build Step"
-						CommandLine=""
-						AdditionalDependencies=""
-						Outputs=""
-					/>
-				</FileConfiguration>
 			</File>
-			<Filter
-				Name="Debug"
-				Filter="cpp;moc"
-				SourceControlFiles="false"
-				>
-				<File
-					RelativePath=".\Debug\moc_Connection.cpp"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\Debug\moc_MainWnd.cpp"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\Debug\moc_Server.cpp"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\Debug\moc_UsersModel.cpp"
-					>
-					<FileConfiguration
-						Name="Release|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-			</Filter>
-			<Filter
-				Name="Release"
-				Filter="cpp;moc"
-				SourceControlFiles="false"
-				>
-				<File
-					RelativePath=".\Release\moc_Connection.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\Release\moc_MainWnd.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\Release\moc_Server.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath=".\Release\moc_UsersModel.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						ExcludedFromBuild="true"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-						/>
-					</FileConfiguration>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Form Files"
@@ -567,8 +543,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="UIC MainWnd.ui"
-						CommandLine="$(QTDIR)\bin\uic.exe MainWnd.ui -o ui_MainWnd.h&#x0D;&#x0A;"
-						AdditionalDependencies="MainWnd.ui;$(QTDIR)\bin\uic.exe"
+						CommandLine="C:\Qt\4.7.4\bin\uic.exe MainWnd.ui -o ui_MainWnd.h&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\uic.exe;MainWnd.ui"
 						Outputs="ui_MainWnd.h"
 					/>
 				</FileConfiguration>
@@ -578,8 +554,8 @@
 					<Tool
 						Name="VCCustomBuildTool"
 						Description="UIC MainWnd.ui"
-						CommandLine="$(QTDIR)\bin\uic.exe MainWnd.ui -o ui_MainWnd.h&#x0D;&#x0A;"
-						AdditionalDependencies="MainWnd.ui;$(QTDIR)\bin\uic.exe"
+						CommandLine="C:\Qt\4.7.4\bin\uic.exe MainWnd.ui -o ui_MainWnd.h&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\uic.exe;MainWnd.ui"
 						Outputs="ui_MainWnd.h"
 					/>
 				</FileConfiguration>
@@ -599,10 +575,10 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Rcc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\rcc.exe&quot; -name &quot;$(InputName)&quot; -no-compress &quot;$(InputPath)&quot; -o .\GeneratedFiles\qrc_$(InputName).cpp&#x0D;&#x0A;"
-						AdditionalDependencies="$(InputPath);.\Images\Server.png"
-						Outputs=".\GeneratedFiles\qrc_$(InputName).cpp"
+						Description="RCC MainWnd.qrc"
+						CommandLine="C:\Qt\4.7.4\bin\rcc.exe -name MainWnd MainWnd.qrc -o debug\qrc_MainWnd.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\rcc.exe;Images\Server.png;MainWnd.qrc"
+						Outputs="debug\qrc_MainWnd.cpp"
 					/>
 				</FileConfiguration>
 				<FileConfiguration
@@ -610,32 +586,16 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						Description="Rcc&apos;ing $(InputFileName)..."
-						CommandLine="&quot;$(QTDIR)\bin\rcc.exe&quot; -name &quot;$(InputName)&quot; -no-compress &quot;$(InputPath)&quot; -o .\GeneratedFiles\qrc_$(InputName).cpp&#x0D;&#x0A;"
-						AdditionalDependencies="$(InputPath);.\Images\Server.png"
-						Outputs=".\GeneratedFiles\qrc_$(InputName).cpp"
+						Description="RCC MainWnd.qrc"
+						CommandLine="C:\Qt\4.7.4\bin\rcc.exe -name MainWnd MainWnd.qrc -o release\qrc_MainWnd.cpp&#x0D;&#x0A;"
+						AdditionalDependencies="C:\Qt\4.7.4\bin\rcc.exe;Images\Server.png;MainWnd.qrc"
+						Outputs="release\qrc_MainWnd.cpp"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\Images\Server.png"
+				RelativePath="Images\Server.png"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					ExcludedFromBuild="true"
-					>
-					<Tool
-						Name="VCCustomBuildTool"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 		<File
@@ -644,13 +604,5 @@
 		</File>
 	</Files>
 	<Globals>
-		<Global
-			Name="QtVersion Win32"
-			Value="4.7.3"
-		/>
-		<Global
-			Name="RccDir"
-			Value=".\GeneratedFiles"
-		/>
 	</Globals>
 </VisualStudioProject>

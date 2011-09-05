@@ -47,7 +47,8 @@ private slots:
 	void onRequestPhoto (const QString& targetUser);
 	void onRequestColor (const QString& targetUser);
 	void onRequestEvents(const QStringList& users, const QStringList& eventTypes, 
-						 const QDateTime& startTime, const QDateTime& endTime);
+						 const QDateTime& startTime, const QDateTime& endTime,
+						 const QStringList& phases, int fuzziness);
 	void onChat(const QStringList& recipients, const QByteArray& content);
 
 private:

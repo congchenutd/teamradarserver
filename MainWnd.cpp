@@ -1,5 +1,6 @@
 #include "MainWnd.h"
 #include "Connection.h"
+#include "TeamRadarEvent.h"
 #include "../ImageColorBoolModel/ImageColorBoolModel.h"
 #include "../ImageColorBoolModel/ImageColorBoolDelegate.h"
 #include <QMessageBox>
@@ -125,8 +126,8 @@ void MainWnd::onReadyForUse()
 	connect(receiver, SIGNAL(registerColor(QString, QByteArray)), this, SLOT(onRegisterColor(QString, QByteArray)));
 	connect(receiver, SIGNAL(requestPhoto(QString)), this, SLOT(onRequestPhoto(QString)));
 	connect(receiver, SIGNAL(requestColor(QString)), this, SLOT(onRequestColor(QString)));
-	connect(receiver, SIGNAL(requestEvents(QStringList, QStringList, QDateTime, QDateTime)),
-			this,     SLOT(onRequestEvents(QStringList, QStringList, QDateTime, QDateTime)));
+	connect(receiver, SIGNAL(requestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)),
+			this,     SLOT(onRequestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)));
 	connect(receiver, SIGNAL(chatMessage(QStringList, QByteArray)),	this, SLOT(onChat(QStringList, QByteArray)));
 
 	// new client
@@ -356,27 +357,24 @@ void MainWnd::resizeUserTable()
 }
 
 void MainWnd::onRequestEvents(const QStringList& users, const QStringList& eventTypes,
-							  const QDateTime& startTime, const QDateTime& endTime)
+							  const QDateTime& startTime, const QDateTime& endTime,
+							  const QStringList& phases, int fuzziness)
 {
-	QString userClause  = "\"" + users.     join("\", \"") + "\"";
-	QString eventClause = "\"" + eventTypes.join("\", \"") + "\"";
-	QSqlQuery query;
-	query.exec(tr("select Client, Event, Parameters, Time from Logs \
-				  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
-		.arg(userClause).arg(eventClause).arg(startTime.toString(dateTimeFormat)).arg(endTime.toString(dateTimeFormat)));
+	//QString userClause  = "\"" + users.     join("\", \"") + "\"";
+	//QString eventClause = "\"" + eventTypes.join("\", \"") + "\"";
+	//QSqlQuery query;
+	//query.exec(tr("select Client, Event, Parameters, Time from Logs \
+	//			  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
+	//	.arg(userClause).arg(eventClause).arg(startTime.toString(dateTimeFormat)).arg(endTime.toString(dateTimeFormat)));
 
-	QString test = tr("select Client, Event, Parameters, Time from Logs \
-					  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
-					  .arg(userClause).arg(eventClause).arg(startTime.toString(dateTimeFormat)).arg(endTime.toString(dateTimeFormat));
-	
-	Receiver* receiver = qobject_cast<Receiver*>(sender());
-	Sender* sender = receiver->getSender();
-	while(query.next())
-		sender->send(Sender::makeEventsResponse(
-							TeamRadarEvent(query.value(0).toString(),
-										   query.value(1).toString(),
-										   query.value(2).toString(),
-										   query.value(3).toString())));
+	//Receiver* receiver = qobject_cast<Receiver*>(sender());
+	//Sender* sender = receiver->getSender();
+	//while(query.next())
+	//	sender->send(Sender::makeEventsResponse(
+	//						TeamRadarEvent(query.value(0).toString(),
+	//									   query.value(1).toString(),
+	//									   query.value(2).toString(),
+	//									   query.value(3).toString())));
 }
 
 void MainWnd::onChat(const QStringList& recipients, const QByteArray& content)
