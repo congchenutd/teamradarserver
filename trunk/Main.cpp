@@ -1,6 +1,8 @@
 #include "MainWnd.h"
 #include "UsersModel.h"
 #include <QtGui/QApplication>
+#include <QString>
+#include <QDateTime>
 
 int main(int argc, char *argv[])
 {

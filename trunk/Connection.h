@@ -20,10 +20,12 @@
 //			Format of parameters: parameter1#parameter2#...
 //		REGISTER_COLOR: color
 //		REQUEST_COLOR: target user name
-//		REQUEST_EVENTS: user list#time span#event types
+//		REQUEST_EVENTS: user list#event types#time span#phases#fuzziness
 //			user list: name1;name2;...
 //			event types: type1;type2;...
 //			time span: start time;end time
+//			phases: phase1;phase2;...
+//			fuzziness: an integer for percentage
 //		CHAT: recipients#content
 //			recipients = name1;name2;...
 //		REQUEST_TIMESPAN: [empty]
@@ -65,7 +67,8 @@ signals:
 	void registerPhoto(const QString& user, const QByteArray& photo);
 	void registerColor(const QString& user, const QByteArray& color);
 	void requestEvents(const QStringList& users, const QStringList& eventTypes,
-					   const QDateTime& startTime, const QDateTime& endTime);
+					   const QDateTime& startTime, const QDateTime& endTime, 
+					   const QStringList& phases, int fuzziness);
 	void chatMessage(const QStringList& recipients, const QByteArray& content);
 	void requestTimeSpan();
 
@@ -172,20 +175,5 @@ private:
 	Connection* connection;
 };
 
-struct TeamRadarEvent
-{
-	TeamRadarEvent::TeamRadarEvent(const QString& name, 
-								   const QString& event, 
-								   const QString& para = QString(), 
-								   const QString& t = QString())
-		: userName(name), eventType(event), parameters(para) {
-			time = t.isEmpty() ? QDateTime::currentDateTime() 
-							   : QDateTime::fromString(t, MainWnd::dateTimeFormat);
-	}
-	QString   userName;
-	QString   eventType;
-	QString   parameters;
-	QDateTime time;
-};
 
 #endif // CONNECTION_H

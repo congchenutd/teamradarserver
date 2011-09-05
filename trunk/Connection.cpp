@@ -1,5 +1,6 @@
 #include "Connection.h"
 #include "MainWnd.h"
+#include "TeamRadarEvent.h"
 #include <QHostAddress>
 #include <QTimerEvent>
 #include <QColor>
@@ -257,15 +258,18 @@ QString Receiver::getUserName() const {
 void Receiver::parseEvents(const QByteArray& buffer)
 {
 	QList<QByteArray> sections = buffer.split(Connection::Delimiter1);
-	if(sections.size() != 3)
+	if(sections.size() != 5)
 		return;
 
-	QStringList users = QString(sections[0]).split(Connection::Delimiter2);
+	QStringList users  = QString(sections[0]).split(Connection::Delimiter2);
 	QStringList events = QString(sections[1]).split(Connection::Delimiter2);
-	QString startTime = sections[2].split(Connection::Delimiter2).at(0);
-	QString endTime   = sections[2].split(Connection::Delimiter2).at(1);
+	QString startTime  = sections[2].split(Connection::Delimiter2).at(0);
+	QString endTime    = sections[2].split(Connection::Delimiter2).at(1);
+	QStringList phases = QString(sections[3]).split(Connection::Delimiter2);
+	int fuzziness      = sections[4].toInt();
 	emit requestEvents(users, events, QDateTime::fromString(startTime, MainWnd::dateTimeFormat), 
-									  QDateTime::fromString(endTime,   MainWnd::dateTimeFormat));
+									  QDateTime::fromString(endTime,   MainWnd::dateTimeFormat),
+									  phases, fuzziness);
 }
 
 void Receiver::parseChat(const QByteArray& buffer)
