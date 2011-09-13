@@ -19,6 +19,10 @@ public:
 	static void setImage(const QString& name, const QString& imagePath);
 	static void setColor(const QString& name, const QString& color);
 	static QString getColor(const QString& name);
+	static void setProject(const QString& name, const QString& project);
+	static QList<QByteArray> getProjects();           // get all active projects
+	static QString getProject(const QString& name);   // get the project the developer is working on
+	static QStringList getDevelopers(const QString& project);  // get all developers working on project
 
 	bool select();
 

@@ -1,13 +1,13 @@
 #include "MainWnd.h"
+#include "Connection.h"
 #include <QtGui/QApplication>
-#include <QTextStream>
-#include <QSqlQuery>
 
 int main(int argc, char *argv[])
 {
 	if(!UsersModel::openDB("TeamRadarServer.db"))
 		return 1;
 	UsersModel::createTables();
+	Receiver::init();
 
 	QApplication app(argc, argv);
 	app.setQuitOnLastWindowClosed(false);

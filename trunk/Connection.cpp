@@ -160,71 +160,30 @@ bool Connection::userExists(const QString& userName) {
 QSet<QString> Connection::userNames;
 
 //////////////////////////////////////////////////////////////////////////
-Receiver::DataType Receiver::guessDataType(const QByteArray& header)
+Receiver::Receiver(Connection* c) {
+	connection = c;
+}
+
+Sender* Receiver::getSender() const {
+	return connection->getSender();
+}
+
+QString Receiver::getUserName() const {
+	return connection->getUserName();
+}
+
+Receiver::DataType Receiver::guessDataType(const QByteArray& h)
 {
-	if(header.startsWith("GREETING"))
-		return Greeting;
-	if(header.startsWith("EVENT"))
-		return Event;
-	if(header.startsWith("REGISTER_PHOTO"))
-		return RegisterPhoto;
-	if(header.startsWith("REQUEST_PHOTO"))
-		return RequestPhoto;
-	if(header.startsWith("REQUEST_USERLIST"))
-		return RequestUserList;
-	if(header.startsWith("REGISTER_COLOR"))
-		return RegisterColor;
-	if(header.startsWith("REQUEST_COLOR"))
-		return RequestColor;
-	if(header.startsWith("REQUEST_EVENTS"))
-		return RequestEvents;
-	if(header.startsWith("CHAT"))
-		return Chat;
-	if(header.startsWith("REQUEST_TIMESPAN"))
-		return RequestTimeSpan;
-	return Undefined;
+	QByteArray header = h;
+	if(header.endsWith('#'))
+		header.chop(1);
+	return dataTypes.contains(header) ? dataTypes[header] : Undefined;
 }
 
 void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer)
 {
-	// before connected
-	if(dataType == Greeting)
-		return parseGreeting(buffer);
-
-	// after connected
-	QString userName = connection->getUserName();
-	switch(dataType)
-	{
-	case Event:
-		emit newEvent(userName, buffer);
-		break;
-	case RegisterPhoto:
-		emit registerPhoto(userName, buffer);
-		break;
-	case RequestPhoto:
-		emit requestPhoto(buffer);
-		break;
-	case RequestUserList:
-		emit requestUserList();
-		break;
-	case RegisterColor:
-		emit registerColor(userName, buffer);
-		break;
-	case RequestColor:
-		emit requestColor(buffer);
-		break;
-	case RequestEvents:
-		parseEvents(buffer);
-		break;
-	case Chat:
-		parseChat(buffer);
-		break;
-	case RequestTimeSpan:
-		emit requestTimeSpan();
-		break;
-	default:
-		break;
-	}
+	if(dataType != Undefined)
+		(this->*parsers[dataType])(buffer);
 }
 
 void Receiver::parseGreeting(const QByteArray& buffer)
@@ -241,18 +200,6 @@ void Receiver::parseGreeting(const QByteArray& buffer)
 		connection->write(Sender::makePacket("GREETING", "WRONG_USER"));
 		abort();
 	}
-}
-
-Receiver::Receiver(Connection* c) {
-	connection = c;
-}
-
-Sender* Receiver::getSender() const {
-	return connection->getSender();
-}
-
-QString Receiver::getUserName() const {
-	return connection->getUserName();
 }
 
 void Receiver::parseEvents(const QByteArray& buffer)
@@ -281,6 +228,66 @@ void Receiver::parseChat(const QByteArray& buffer)
 	QStringList recipients = QString(sections[0]).split(Connection::Delimiter2);
 	emit chatMessage(recipients, sections[1]);
 }
+
+void Receiver::parseEvent(const QByteArray& buffer) {
+	emit newEvent(connection->getUserName(), buffer);
+}
+void Receiver::parseRegisterPhoto(const QByteArray& buffer) {
+	emit registerPhoto(connection->getUserName(), buffer);
+}
+void Receiver::parseRegisterColor(const QByteArray& buffer) {
+	emit registerColor(connection->getUserName(), buffer);
+}
+void Receiver::parseRequestPhoto(const QByteArray& buffer) {
+	emit requestPhoto(buffer);
+}
+void Receiver::parseRequestUserList(const QByteArray&) {
+	emit requestUserList();
+}
+void Receiver::parseRequestColor(const QByteArray& buffer) {
+	emit requestColor(buffer);
+}
+void Receiver::parseRequestTimeSpan(const QByteArray&) {
+	emit requestTimeSpan();
+}
+void Receiver::parseRequestProjects(const QByteArray&) {
+	emit requestProjects();
+}
+void Receiver::parseJoinProject(const QByteArray& buffer) {
+	emit joinProject(buffer);
+}
+
+void Receiver::init()
+{
+	dataTypes.insert("GREETING",         Greeting);
+	dataTypes.insert("EVENT",            Event);
+	dataTypes.insert("REGISTER_PHOTO",   RegisterPhoto);
+	dataTypes.insert("REGISTER_COLOR",   RegisterColor);
+	dataTypes.insert("REQUEST_USERLIST", RequestUserList);
+	dataTypes.insert("REQUEST_PHOTO",    RequestPhoto);
+	dataTypes.insert("REQUEST_COLOR",    RequestColor);
+	dataTypes.insert("REQUEST_EVENTS",   RequestEvents);
+	dataTypes.insert("CHAT",             Chat);
+	dataTypes.insert("REQUEST_TIMESPAN", RequestTimeSpan);
+	dataTypes.insert("REQUEST_PROJECTS", RequestProjects);
+	dataTypes.insert("JOIN_PROJECT",     JoinProject);
+
+	parsers.insert(Greeting,        &Receiver::parseGreeting);
+	parsers.insert(Event,           &Receiver::parseEvent);
+	parsers.insert(RegisterPhoto,   &Receiver::parseRegisterPhoto);
+	parsers.insert(RegisterColor,   &Receiver::parseRegisterColor);
+	parsers.insert(RequestUserList, &Receiver::parseRequestUserList);
+	parsers.insert(RequestPhoto,    &Receiver::parseRequestPhoto);
+	parsers.insert(RequestColor,    &Receiver::parseRequestColor);
+	parsers.insert(RequestEvents,   &Receiver::parseEvents);
+	parsers.insert(Chat,            &Receiver::parseChat);
+	parsers.insert(RequestTimeSpan, &Receiver::parseRequestTimeSpan);
+	parsers.insert(RequestProjects, &Receiver::parseRequestProjects);
+	parsers.insert(JoinProject,     &Receiver::parseJoinProject);
+}
+
+QMap<QString, Receiver::DataType> Receiver::dataTypes;
+QMap<Receiver::DataType, Receiver::Parser> Receiver::parsers;
 
 //////////////////////////////////////////////////////////////////////////
 Sender::Sender(Connection* c) {
@@ -345,4 +352,8 @@ QByteArray Sender::makeChatPacket(const QString& user, const QByteArray& content
 
 QByteArray Sender::makeTimeSpanResponse(const QByteArray& start, const QByteArray& end) {
 	return makePacket("TIMESPAN_RESPONSE", QList<QByteArray>() << start << end);
+}
+
+QByteArray Sender::makeProjectsResponse(const QList<QByteArray>& projects) {
+	return makePacket("PROJECTS_RESPONSE", projects);
 }

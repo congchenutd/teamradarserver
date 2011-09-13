@@ -33,7 +33,8 @@ void UsersModel::createTables()
 				Username varchar primary key, \
 				Online bool, \
 				Color varchar, \
-				Image varchar \
+				Image varchar, \
+				Project varchar \
 				)");
 }
 
@@ -58,7 +59,7 @@ void UsersModel::makeOnline(const QString& name)
 void UsersModel::addUser(const QString& name)
 {
 	QSqlQuery query;
-	query.exec(tr("insert into Users values (\"%1\", \"true\", \"#000000\", \"\")").arg(name));
+	query.exec(tr("insert into Users values (\"%1\", \"true\", \"#000000\", \"\", \"\")").arg(name));
 }
 
 void UsersModel::setImage(const QString& name, const QString& imagePath)
@@ -85,4 +86,37 @@ QString UsersModel::getColor(const QString& name)
 	QSqlQuery query;
 	query.exec(tr("select Color from Users where Username = \"%1\"").arg(name));
 	return query.next() ? query.value(0).toString() : "#000000";
+}
+
+void UsersModel::setProject(const QString& name, const QString& project)
+{
+	QSqlQuery query;
+	query.exec(tr("update Users set Project = \"%1\" where Username = \"%2\"").arg(project).arg(name));
+}
+
+QList<QByteArray> UsersModel::getProjects()
+{
+	QList<QByteArray> result;
+	QSqlQuery query;
+	query.exec(tr("select Projects from Users"));
+	while(query.next())
+		result << query.value(0).toString().toUtf8();
+	return result;
+}
+
+QString UsersModel::getProject(const QString& name)
+{
+	QSqlQuery query;
+	query.exec(tr("select Project from Users where Username = \"%1\"").arg(name));
+	return query.next() ? query.value(0).toString() : QString();
+}
+
+QStringList UsersModel::getDevelopers(const QString& project)
+{
+	QStringList result;
+	QSqlQuery query;
+	query.exec(tr("select Username from Users where Project = \"%1\"").arg(project));
+	while(query.next())
+		result << query.value(0).toString().toUtf8();
+	return result;
 }
