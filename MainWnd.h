@@ -14,12 +14,13 @@
 
 class UserSetting;
 struct TeamRadarEvent;
+class Sender;
 
 class MainWnd : public QDialog
 {
 	Q_OBJECT
 
-	typedef QMap<QString, Connection*> Connections;
+	typedef QMap<QString, Connection*> Connections;   // <user, connection>
 
 public:
 	MainWnd(QWidget *parent = 0, Qt::WFlags flags = 0);
@@ -41,6 +42,7 @@ private slots:
 	void resizeUserTable();
 	void onRequestUserList();
 	void onRequestTimeSpan();
+	void onRequestProjects();
 	void onNewEvent(const QString& user, const QByteArray& message);
 	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
 	void onRegisterColor(const QString& user, const QByteArray& color);
@@ -50,6 +52,7 @@ private slots:
 						 const QDateTime& startTime, const QDateTime& endTime,
 						 const QStringList& phases, int fuzziness);
 	void onChat(const QStringList& recipients, const QByteArray& content);
+	void onJointProject(const QString& projectName);
 
 private:
 	void createTray();
@@ -58,10 +61,13 @@ private:
 	bool connectionExists(const Connection* connection) const;
 	QString getCurrentLocalAddress() const;
 	void    setCurrentLocalAddress(const QString& address);
+	Sender* getSender() const;                                // sender associated with the connection
+	QString getSourceDeveloperName() const;                   // get the user name of the signal
+	QStringList getGroup(const QString& developer);           // peers on the same project
 
-	void broadcast(const QString& sourceUser, const QByteArray& packet);
+	void broadcast(const QString& source, const QStringList& recipients, const QByteArray& packet);
+	void broadcast(const QString& source, const QByteArray& packet);
 	void broadcast(const TeamRadarEvent& event);
-	void multicast(const QString& source, const QStringList& recipient, const QByteArray& packet);
 	void log      (const TeamRadarEvent& event);
 
 public:
@@ -77,6 +83,7 @@ private:
 	Connections    connections;
 	QSqlTableModel modelLogs;
 	UsersModel     modelUsers;
+
 };
 
 

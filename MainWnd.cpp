@@ -104,8 +104,7 @@ void MainWnd::onNewConnection(Connection* connection)
 }
 
 void MainWnd::onConnectionError() {
-	if(Connection* connection = qobject_cast<Connection*>(sender()))
-		removeConnection(connection);
+	onDisconnected();
 }
 
 void MainWnd::onDisconnected() {
@@ -122,6 +121,7 @@ void MainWnd::onReadyForUse()
 	Receiver* receiver = connection->getReceiver();
 	connect(receiver, SIGNAL(requestUserList()), this, SLOT(onRequestUserList()));
 	connect(receiver, SIGNAL(requestTimeSpan()), this, SLOT(onRequestTimeSpan()));
+	connect(receiver, SIGNAL(requestProjects()), this, SLOT(onRequestProjects()));
 	connect(receiver, SIGNAL(newEvent(QString, QByteArray)), this, SLOT(onNewEvent(QString, QByteArray)));
 	connect(receiver, SIGNAL(registerPhoto(QString, QByteArray)), this, SLOT(onRegisterPhoto(QString, QByteArray)));
 	connect(receiver, SIGNAL(registerColor(QString, QByteArray)), this, SLOT(onRegisterColor(QString, QByteArray)));
@@ -130,6 +130,7 @@ void MainWnd::onReadyForUse()
 	connect(receiver, SIGNAL(requestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)),
 			this,     SLOT(onRequestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)));
 	connect(receiver, SIGNAL(chatMessage(QStringList, QByteArray)),	this, SLOT(onChat(QStringList, QByteArray)));
+	connect(receiver, SIGNAL(joinProject(QString)), this, SLOT(onJointProject(QString)));
 
 	// new client
 	connections.insert(connection->getUserName(), connection);
@@ -182,6 +183,7 @@ void MainWnd::setCurrentLocalAddress(const QString& address) {
 		ui.cbLocalAddresses->findText(address));
 }
 
+// bind again
 void MainWnd::onPortChanged(int port)
 {
 	server.close();
@@ -208,11 +210,8 @@ void MainWnd::log(const TeamRadarEvent& event)
 	ui.tvLogs->resizeColumnsToContents();
 }
 
-void MainWnd::broadcast(const QString& sourceUser, const QByteArray& packet)
-{
-	foreach(Connection* connection, connections)
-		if(connection->getUserName() != sourceUser)  // skip the source
-			connection->getSender()->send(packet);
+void MainWnd::broadcast(const QString& source, const QByteArray& packet) {
+	broadcast(source, getGroup(source), packet);   // broadcast in the group
 }
 
 void MainWnd::broadcast(const TeamRadarEvent& event)
@@ -221,12 +220,15 @@ void MainWnd::broadcast(const TeamRadarEvent& event)
 	log(event);
 }
 
-
-void MainWnd::multicast(const QString& source, const QStringList& recipient, const QByteArray& packet)
+void MainWnd::broadcast(const QString& source, const QStringList& recipients, const QByteArray& packet)
 {
-	foreach(Connection* connection, connections)
-		if(connection->getUserName() != source && recipient.contains(connection->getUserName()))
-			connection->getSender()->send(packet);
+	foreach(QString recipient, recipients)    // broadcast to the recipients
+		if(connections.contains(recipient))   // the connection of the recipient
+		{
+			Connection* connection = connections[recipient];
+			if(connection->getUserName() != source)      // skip the source
+				connection->getSender()->send(packet);
+		}
 }
 
 void MainWnd::onClear()
@@ -269,15 +271,18 @@ void MainWnd::onExport()
 
 void MainWnd::onRequestUserList()
 {
-	// make user list
-	QList<QByteArray> users;
-	foreach(Connection* connection, connections)
-		users << connection->getUserName().toUtf8();
+	QStringList peers = getGroup(getSourceDeveloperName());
+	QList<QByteArray> onlinePeers;
+	foreach(QString peer, peers)
+		if(connections.contains(peer))     // online
+			onlinePeers << peer.toUtf8();
 
-	Receiver* receiver = qobject_cast<Receiver*>(sender());
-	Sender* sender = receiver->getSender();
-	sender->send(sender->makeUserListResponse(users));
-	log(TeamRadarEvent(receiver->getUserName(), "Request user list"));
+	Sender* sender = getSender();
+	if(sender != 0)
+	{
+		sender->send(Sender::makeUserListResponse(onlinePeers));
+		log(TeamRadarEvent(sender->getUserName(), "Request user list"));
+	}
 }
 
 void MainWnd::onRequestTimeSpan()
@@ -288,10 +293,17 @@ void MainWnd::onRequestTimeSpan()
 	{
 		QByteArray start = query.value(0).toString().toUtf8();
 		QByteArray end   = query.value(1).toString().toUtf8();
-		Receiver* receiver = qobject_cast<Receiver*>(sender());
-		Sender* sender = receiver->getSender();
-		sender->send(sender->makeTimeSpanResponse(start, end));
+		Sender* sender = getSender();
+		if(sender != 0)
+			sender->send(Sender::makeTimeSpanResponse(start, end));
 	}
+}
+
+void MainWnd::onRequestProjects()
+{
+	Sender* sender = getSender();
+	if(sender != 0)
+		sender->send(Sender::makeProjectsResponse(UsersModel::getProjects()));
 }
 
 void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
@@ -330,8 +342,9 @@ void MainWnd::onRequestPhoto(const QString& targetUser)
 {
 	QString fileName = targetUser + ".png";
 	QFile file(fileName);
-	Receiver* receiver = qobject_cast<Receiver*>(sender());
-	Sender* sender = receiver->getSender();
+	Sender* sender = getSender();
+	if(sender == 0)
+		return;
 	if(file.open(QFile::ReadOnly))
 	{
 		sender->send(Sender::makePhotoResponse(fileName, file.readAll()));
@@ -344,11 +357,13 @@ void MainWnd::onRequestPhoto(const QString& targetUser)
 
 void MainWnd::onRequestColor(const QString& targetUser)
 {
-	Receiver* receiver = qobject_cast<Receiver*>(sender());
-	Sender* sender = receiver->getSender();
 	QByteArray color = UsersModel::getColor(targetUser).toUtf8();
-	sender->send(Sender::makeColorResponse(targetUser, color));
-	log(TeamRadarEvent(sender->getUserName(), "Request color of", targetUser));
+	Sender* sender = getSender();
+	if(sender != 0)
+	{
+		sender->send(Sender::makeColorResponse(targetUser, color));
+		log(TeamRadarEvent(sender->getUserName(), "Request color of", targetUser));
+	}
 }
 
 void MainWnd::resizeUserTable()
@@ -381,17 +396,46 @@ void MainWnd::onRequestEvents(const QStringList& users, const QStringList& event
 	Events dividedEvents = divider.getEvents(phases);
 
 	// send
-	Receiver* receiver = qobject_cast<Receiver*>(sender());
-	Sender* sender = receiver->getSender();
-	foreach(TeamRadarEvent event, dividedEvents)
-		sender->send(Sender::makeEventsResponse(event));
+	Sender* sender = getSender();
+	if(sender != 0)
+		foreach(TeamRadarEvent event, dividedEvents)
+			sender->send(Sender::makeEventsResponse(event));
 }
 
 void MainWnd::onChat(const QStringList& recipients, const QByteArray& content)
 {
+	QString sourceName = getSourceDeveloperName();
+	broadcast(sourceName, recipients, Sender::makeChatPacket(sourceName, content));
+}
+
+void MainWnd::onJointProject(const QString& projectName)
+{
+	// remove the developer from the old group
+	QString developer = getSourceDeveloperName();
+	QString oldProject = UsersModel::getProject(developer);
+	if(oldProject != projectName)
+		broadcast(TeamRadarEvent(developer, "DISCONNECTED"));
+		
+	UsersModel::setProject(developer, projectName);
+	modelUsers.select();
+}
+
+Sender* MainWnd::getSender() const
+{
 	Receiver* receiver = qobject_cast<Receiver*>(sender());
-	QString sourceName = receiver->getUserName();
-	multicast(sourceName, recipients, Sender::makeChatPacket(sourceName, content));
+	return receiver != 0 ? receiver->getSender() : 0;
+}
+
+QString MainWnd::getSourceDeveloperName() const
+{
+	Receiver* receiver = qobject_cast<Receiver*>(sender());
+	return receiver != 0 ? receiver->getUserName() : QString();
+}
+
+QStringList MainWnd::getGroup(const QString& developer)
+{
+	QString project = UsersModel::getProject(developer);
+	return UsersModel::getDevelopers(project);
 }
 
 const QString MainWnd::dateTimeFormat = "yyyy-MM-dd HH:mm:ss";

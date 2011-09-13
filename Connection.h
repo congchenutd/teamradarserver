@@ -29,6 +29,8 @@
 //		CHAT: recipients#content
 //			recipients = name1;name2;...
 //		REQUEST_TIMESPAN: [empty]
+//		REQUEST_PROJECTS: [empty]
+//		JOIN_PROJECT: projectname
 
 class Connection;
 class Sender;
@@ -49,8 +51,12 @@ public:
 		RequestColor,
 		RequestEvents,
 		Chat,
-		RequestTimeSpan
+		RequestTimeSpan,
+		RequestProjects,
+		JoinProject
 	} DataType;
+
+	typedef void(Receiver::*Parser)(const QByteArray& buffer);
 
 public:
 	Receiver(Connection* c);
@@ -58,6 +64,7 @@ public:
 	void processData(Receiver::DataType dataType, const QByteArray& buffer);
 	Sender* getSender() const;
 	QString getUserName() const;
+	static void init();
 
 signals:
 	void newEvent(const QString& from, const QByteArray& message);
@@ -71,14 +78,27 @@ signals:
 					   const QStringList& phases, int fuzziness);
 	void chatMessage(const QStringList& recipients, const QByteArray& content);
 	void requestTimeSpan();
+	void requestProjects();
+	void joinProject(const QString& projectName);
 
 private:
-	void parseGreeting(const QByteArray& buffer);
-	void parseEvents  (const QByteArray& buffer);
-	void parseChat    (const QByteArray& buffer);
+	void parseGreeting       (const QByteArray& buffer);
+	void parseEvent          (const QByteArray& buffer);
+	void parseRegisterPhoto  (const QByteArray& buffer);
+	void parseRegisterColor  (const QByteArray& buffer);
+	void parseRequestPhoto   (const QByteArray& buffer);
+	void parseRequestUserList(const QByteArray& buffer);
+	void parseRequestColor   (const QByteArray& buffer);
+	void parseRequestTimeSpan(const QByteArray& buffer);
+	void parseRequestProjects(const QByteArray& buffer);
+	void parseJoinProject    (const QByteArray& buffer);
+	void parseEvents         (const QByteArray& buffer);
+	void parseChat           (const QByteArray& buffer);
 
 private:
 	Connection* connection;
+	static QMap<QString, DataType> dataTypes;
+	static QMap<DataType, Parser>  parsers;
 };
 
 // A TCP socket connected to the server
@@ -149,6 +169,7 @@ private:
 //		EVENT_RESPONSE: same as event
 //		CHAT: peerName#content
 //		TIMESPAN_RESPONSE: start#end
+//		PROJECT_RESPONSE: projectName1#name2...
 
 //	Formatting (makeXXX) and sending (send) are separated for flexibility
 
@@ -170,6 +191,7 @@ public:
 	static QByteArray makeEventsResponse(const TeamRadarEvent& event);
 	static QByteArray makeChatPacket(const QString& user, const QByteArray& content);
 	static QByteArray makeTimeSpanResponse(const QByteArray& start, const QByteArray& end);
+	static QByteArray makeProjectsResponse(const QList<QByteArray>& projects);
 
 private:
 	Connection* connection;
