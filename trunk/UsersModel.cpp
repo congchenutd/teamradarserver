@@ -3,6 +3,7 @@
 #include <QSqlQuery>
 #include <QMessageBox>
 #include <QSqlQuery>
+#include <QSet>
 
 UsersModel::UsersModel(QObject* parent)
 	: QSqlTableModel(parent) {}
@@ -96,12 +97,16 @@ void UsersModel::setProject(const QString& name, const QString& project)
 
 QList<QByteArray> UsersModel::getProjects()
 {
-	QList<QByteArray> result;
+	QSet<QByteArray> result;
 	QSqlQuery query;
-	query.exec(tr("select Projects from Users"));
+	query.exec(tr("select Project from Users"));
 	while(query.next())
-		result << query.value(0).toString().toUtf8();
-	return result;
+	{
+		QString project = query.value(0).toString();
+		if(!project.isEmpty())
+			result << project.toUtf8();
+	}
+	return result.toList();
 }
 
 QString UsersModel::getProject(const QString& name)
