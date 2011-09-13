@@ -180,8 +180,7 @@ Receiver::DataType Receiver::guessDataType(const QByteArray& h)
 	return dataTypes.contains(header) ? dataTypes[header] : Undefined;
 }
 
-void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer)
-{
+void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer) {
 	if(dataType != Undefined)
 		(this->*parsers[dataType])(buffer);
 }
