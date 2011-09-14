@@ -182,7 +182,7 @@ public:
 	void send(const QByteArray& packet);  // send the formatted packet
 
 	// format the packet
-	static QByteArray makePacket(const QByteArray& header, const QByteArray& body = QByteArray("P"));
+	static QByteArray makePacket(const QByteArray& header, const QByteArray& body = QByteArray());
 	static QByteArray makePacket(const QByteArray& header, const QList<QByteArray>& bodies);
 	static QByteArray makeEventPacket(const TeamRadarEvent& event);
 	static QByteArray makeUserListResponse(const QList<QByteArray>& userList);

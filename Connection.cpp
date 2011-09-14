@@ -115,7 +115,7 @@ bool Connection::hasEnoughData()
 	if(numBytes <= 0)	  // get length
 		numBytes = getDataLength();
 
-	if(bytesAvailable() < numBytes || numBytes <= 0)	// wait for data
+	if(bytesAvailable() < numBytes/* || numBytes <= 0*/)	// wait for data
 	{
 		transferTimerID = startTimer(TransferTimeout);
 		return false;
@@ -304,6 +304,7 @@ QString Sender::getUserName() const {
 
 QByteArray Sender::makePacket(const QByteArray& header, const QByteArray& body)
 {
+//	QByteArray b = body.isEmpty() ? "P" : body;
 	QByteArray packet(header);
 	if(!header.endsWith(Connection::Delimiter1))
 		packet.append(Connection::Delimiter1);
@@ -354,5 +355,6 @@ QByteArray Sender::makeTimeSpanResponse(const QByteArray& start, const QByteArra
 }
 
 QByteArray Sender::makeProjectsResponse(const QList<QByteArray>& projects) {
-	return makePacket("PROJECTS_RESPONSE", projects);
+	return /*projects.isEmpty() ? makePacket("PROJECTS_RESPONSE", "Error")
+							  : */makePacket("PROJECTS_RESPONSE", projects);
 }
