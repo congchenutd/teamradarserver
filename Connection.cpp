@@ -85,7 +85,6 @@ int Connection::readDataIntoBuffer(int maxSize)
 	while(bytesAvailable() > 0 && buffer.size() < maxSize)
 	{
 		buffer.append(read(1));
-//		if(buffer.endsWith('#'))
 		if(buffer.endsWith(Delimiter1))
 			break;
 	}

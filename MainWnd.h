@@ -27,6 +27,7 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent* event);   // hide, instead of close
+	void contextMenuEvent(QContextMenuEvent*);
 
 private slots:
 	void onShutdown();
@@ -39,6 +40,7 @@ private slots:
 	void onClear();
 	void onAbout();
 	void onExport();
+	void onDelete();
 	void resizeUserTable();
 	void onRequestUserList();
 	void onRequestTimeSpan();
