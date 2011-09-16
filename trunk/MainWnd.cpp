@@ -1,7 +1,7 @@
 #include "MainWnd.h"
 #include "Connection.h"
 #include "TeamRadarEvent.h"
-#include "../ImageColorBoolModel/ImageColorBoolModel.h"
+#include "../ImageColorBoolModel/ImageColorBoolProxy.h"
 #include "../ImageColorBoolModel/ImageColorBoolDelegate.h"
 #include "PhaseDivider.h"
 #include <QMessageBox>
@@ -436,6 +436,32 @@ QStringList MainWnd::getGroup(const QString& developer)
 {
 	QString project = UsersModel::getProject(developer);
 	return UsersModel::getDevelopers(project);
+}
+
+void MainWnd::contextMenuEvent(QContextMenuEvent* event)
+{
+	QModelIndexList idxes = ui.tvUsers->selectionModel()->selectedRows();
+	if(idxes.isEmpty())
+		return;
+
+	QMenu menu(this);
+	QAction* actionDelete = new QAction("Delete", this);
+	connect(actionDelete, SIGNAL(triggered()), this, SLOT(onDelete()));
+	menu.addAction(actionDelete);
+	menu.exec(event->globalPos());
+}
+
+void MainWnd::onDelete()
+{
+	QModelIndexList idxes = ui.tvUsers->selectionModel()->selectedRows();
+	if(idxes.isEmpty())
+		return;
+
+	if(QMessageBox::warning(this, tr("Warning"), tr("Really delete this entry?"), 
+		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::No)
+		return;
+
+	modelUsers.removeRow(idxes.front().row());
 }
 
 const QString MainWnd::dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
