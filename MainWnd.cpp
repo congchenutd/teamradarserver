@@ -4,6 +4,7 @@
 #include "../ImageColorBoolModel/ImageColorBoolProxy.h"
 #include "../ImageColorBoolModel/ImageColorBoolDelegate.h"
 #include "PhaseDivider.h"
+#include "Setting.h"
 #include <QMessageBox>
 #include <QCloseEvent>
 #include <QMenu>
@@ -19,7 +20,7 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	updateLocalAddresses();   // fetch local IPs
 
 	// load setting
-	setting = UserSetting::getInstance();
+	setting = Setting::getInstance();
 	setCurrentLocalAddress(setting->getIPAddress());   // ip
 	ui.sbPort->setValue(setting->getPort());           // port
 	onPortChanged(setting->getPort());                 // listen
@@ -86,7 +87,7 @@ void MainWnd::onShutdown()
 	trayIcon->hide();
 	setting->setIPAddress(getCurrentLocalAddress());  // save setting
 	setting->setPort(ui.sbPort->value());
-	UserSetting::destroySettingManager();
+	Setting::destroySettingManager();
 	qApp->quit();
 }
 
@@ -134,6 +135,7 @@ void MainWnd::onReadyForUse()
 
 	// new client
 	connections.insert(connection->getUserName(), connection);
+	log(TeamRadarEvent(connection->getUserName(), "Connection initialized"));
 	
 	// refresh the user table
 	UsersModel::addUser   (connection->getUserName());
@@ -313,7 +315,7 @@ void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
 
 	QByteArray suffix   = photoData.left(seperator);
 	QByteArray fileData = photoData.right(photoData.length() - seperator - 1);
-	QString fileName(user + "." + suffix);
+	QString fileName(setting->getPhotoDir() + "/" + user + "." + suffix);
 	QFile file(fileName);
 	if(file.open(QFile::WriteOnly | QFile::Truncate))
 	{
@@ -412,8 +414,8 @@ void MainWnd::onJointProject(const QString& projectName)
 	// remove the developer from the old group
 	QString developer = getSourceDeveloperName();
 	QString oldProject = UsersModel::getProject(developer);
-	if(oldProject != projectName)
-		broadcast(TeamRadarEvent(developer, "DISCONNECTED"));
+	if(!oldProject.isEmpty() && oldProject != projectName)
+		broadcast(TeamRadarEvent(developer, "DISCONNECTED", oldProject));
 	
 	UsersModel::setProject(developer, projectName);
 	modelUsers.select();
@@ -471,34 +473,4 @@ int getNextID(const QString& tableName, const QString& sectionName)
 	QSqlQuery query;
 	query.exec(QObject::tr("select max(%1) from %2").arg(sectionName).arg(tableName));
 	return query.next() ? query.value(0).toInt() + 1 : 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
-// Setting
-UserSetting::UserSetting(const QString& fileName) : MySetting<UserSetting>(fileName)
-{
-	if(QFile(this->fileName).size() == 0)   // no setting
-		loadDefaults();
-}
-
-void UserSetting::loadDefaults()
-{
-	setIPAddress("127.0.0.1");
-	setPort(12345);
-}
-
-QString UserSetting::getIPAddress() const {
-	return value("IPAddress").toString();
-}
-
-quint16 UserSetting::getPort() const {
-	return value("Port").toInt();
-}
-
-void UserSetting::setIPAddress(const QString& address) {
-	setValue("IPAddress", address);
-}
-
-void UserSetting::setPort(quint16 port) {
-	setValue("Port", port);
 }

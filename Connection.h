@@ -31,7 +31,7 @@
 //		REQUEST_TIMESPAN: [empty]
 //		REQUEST_PROJECTS: [empty]
 //		JOIN_PROJECT: projectname
-
+//		RENAME: new name
 class Connection;
 class Sender;
 
