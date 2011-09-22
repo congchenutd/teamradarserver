@@ -56,15 +56,14 @@ bool Connection::readHeader()
 	}
 
 	dataType = receiver->guessDataType(buffer);
+	buffer.clear();
+
 	if(dataType == Receiver::Undefined)   // ignore unknown
 	{
 		qDebug() << "Unknown dataType: " << buffer;
-		buffer.clear();
 		return false;
 	}
 
-	buffer.clear();
-	numBytes = getDataLength();   // ready to read the payload
 	return true;
 }
 
@@ -94,7 +93,7 @@ int Connection::readDataIntoBuffer(int maxSize)
 
 int Connection::getDataLength()
 {
-	if (bytesAvailable() <= 0 || readDataIntoBuffer() <= 0 || !buffer.endsWith(Delimiter1))
+	if(bytesAvailable() <= 0 || readDataIntoBuffer() <= 0 || !buffer.endsWith(Delimiter1))
 		return 0;
 
 	buffer.chop(1);    // chop separator
@@ -111,10 +110,10 @@ bool Connection::hasEnoughData()
 		transferTimerID = 0;
 	}
 
-	if(numBytes <= 0)	  // get length
+	if(numBytes < 0)	  // get length
 		numBytes = getDataLength();
 
-	if(bytesAvailable() < numBytes/* || numBytes <= 0*/)	// wait for data
+	if(bytesAvailable() < numBytes)	// wait for data
 	{
 		transferTimerID = startTimer(TransferTimeout);
 		return false;
@@ -126,6 +125,7 @@ bool Connection::hasEnoughData()
 void Connection::processData()
 {
 	buffer = read(numBytes);
+	qDebug() << buffer;
 	if(buffer.size() != numBytes)
 	{
 		abort();
@@ -135,7 +135,7 @@ void Connection::processData()
 	receiver->processData(dataType, buffer);
 
 	dataType = Receiver::Undefined;
-	numBytes = 0;
+	numBytes = -1;
 	buffer.clear();
 }
 

@@ -9,10 +9,9 @@
 #include <QSqlTableModel>
 #include "ui_MainWnd.h"
 #include "Server.h"
-#include "../MySetting/MySetting.h"
 #include "UsersModel.h"
 
-class UserSetting;
+class Setting;
 struct TeamRadarEvent;
 class Sender;
 
@@ -79,30 +78,13 @@ public:
 private:
 	Ui::MainWndClass ui;
 
-	UserSetting* setting;
+	Setting* setting;
 	QSystemTrayIcon* trayIcon;
 	Server         server;
 	Connections    connections;
 	QSqlTableModel modelLogs;
 	UsersModel     modelUsers;
 
-};
-
-
-//////////////////////////////////////////////////////////////////////////
-class UserSetting : public MySetting<UserSetting>
-{
-public:
-	UserSetting(const QString& fileName);
-
-	QString getIPAddress() const;
-	quint16 getPort() const;
-
-	void setIPAddress(const QString& address);
-	void setPort(quint16 port);
-
-private:
-	void loadDefaults();
 };
 
 int getNextID(const QString& tableName, const QString& sectionName);
