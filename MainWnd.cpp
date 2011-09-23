@@ -341,7 +341,7 @@ void MainWnd::onRegisterColor(const QString& user, const QByteArray& color)
 
 void MainWnd::onRequestPhoto(const QString& targetUser)
 {
-	QString fileName = targetUser + ".png";
+	QString fileName = setting->getPhotoDir() + "/" + targetUser + ".png";
 	QFile file(fileName);
 	Sender* sender = getSender();
 	if(sender == 0)
