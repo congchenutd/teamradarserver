@@ -135,7 +135,7 @@ void MainWnd::onReadyForUse()
 
 	// new client
 	connections.insert(connection->getUserName(), connection);
-	log(TeamRadarEvent(connection->getUserName(), "Connection initialized"));
+	log(TeamRadarEvent(connection->getUserName(), "Connected"));
 	
 	// refresh the user table
 	UsersModel::addUser   (connection->getUserName());
@@ -419,7 +419,7 @@ void MainWnd::onJointProject(const QString& projectName)
 	
 	UsersModel::setProject(developer, projectName);
 	modelUsers.select();
-	broadcast(TeamRadarEvent(developer, "CONNECTED"));
+	broadcast(TeamRadarEvent(developer, "Joined"));
 }
 
 Sender* MainWnd::getSender() const
