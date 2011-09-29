@@ -382,7 +382,9 @@ void MainWnd::onRequestEvents(const QStringList& users, const QStringList& event
 	QString eventClause = "\"" + eventTypes.join("\", \"") + "\"";
 	QSqlQuery query;
 	query.exec(tr("select Client, Event, Parameters, Time from Logs \
-				  where Client in (%1) and Event in (%2) and Time between \"%3\" and \"%4\"")
+				  where Client in (%1) and \
+				        Event in (%2) and \
+				        Time between \"%3\" and \"%4\"")
 		.arg(userClause).arg(eventClause).arg(startTime.toString(dateTimeFormat)).arg(endTime.toString(dateTimeFormat)));
 
 	Events events;
@@ -419,7 +421,7 @@ void MainWnd::onJointProject(const QString& projectName)
 	
 	UsersModel::setProject(developer, projectName);
 	modelUsers.select();
-	broadcast(TeamRadarEvent(developer, "Joined"));
+	broadcast(TeamRadarEvent(developer, "JOINED", projectName));
 }
 
 Sender* MainWnd::getSender() const

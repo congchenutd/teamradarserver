@@ -188,15 +188,15 @@ void Receiver::parseGreeting(const QByteArray& buffer)
 {
 	QString userName = buffer;
 	connection->setUserName(userName);
-	if(!connection->userExists(userName))  // check user name
-	{
-		connection->write(Sender::makePacket("GREETING", "OK, CONNECTED"));
-		connection->setReadyForUse();
-	}
-	else
+	if(userName.isEmpty() || connection->userExists(userName))  // check user name
 	{
 		connection->write(Sender::makePacket("GREETING", "WRONG_USER"));
 		abort();
+	}
+	else
+	{
+		connection->write(Sender::makePacket("GREETING", "OK, CONNECTED"));
+		connection->setReadyForUse();	
 	}
 }
 
