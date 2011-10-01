@@ -242,7 +242,7 @@ void Receiver::parseRequestPhoto(const QByteArray& buffer) {
 void Receiver::parseRequestUserList(const QByteArray&) {
 	emit requestUserList();
 }
-void Receiver::parseRequestAllUsers(const QByteArray& buffer) {
+void Receiver::parseRequestAllUsers(const QByteArray&) {
 	emit requestAllUsers();
 }
 void Receiver::parseRequestColor(const QByteArray& buffer) {
