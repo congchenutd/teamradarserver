@@ -121,6 +121,7 @@ void MainWnd::onReadyForUse()
 
 	Receiver* receiver = connection->getReceiver();
 	connect(receiver, SIGNAL(requestUserList()), this, SLOT(onRequestUserList()));
+	connect(receiver, SIGNAL(requestAllUsers()), this, SLOT(onRequestAllUsers()));
 	connect(receiver, SIGNAL(requestTimeSpan()), this, SLOT(onRequestTimeSpan()));
 	connect(receiver, SIGNAL(requestProjects()), this, SLOT(onRequestProjects()));
 	connect(receiver, SIGNAL(newEvent(QString, QByteArray)), this, SLOT(onNewEvent(QString, QByteArray)));
@@ -130,7 +131,7 @@ void MainWnd::onReadyForUse()
 	connect(receiver, SIGNAL(requestColor(QString)), this, SLOT(onRequestColor(QString)));
 	connect(receiver, SIGNAL(requestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)),
 			this,     SLOT(onRequestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)));
-	connect(receiver, SIGNAL(chatMessage(QStringList, QByteArray)),	this, SLOT(onChat(QStringList, QByteArray)));
+	connect(receiver, SIGNAL(chatMessage(QList<QByteArray>, QByteArray)), this, SLOT(onChat(QList<QByteArray>, QByteArray)));
 	connect(receiver, SIGNAL(joinProject(QString)), this, SLOT(onJointProject(QString)));
 
 	// new client
@@ -143,7 +144,7 @@ void MainWnd::onReadyForUse()
 	modelUsers.select();
 }
 
-void MainWnd::removeConnection(Connection *connection)
+void MainWnd::removeConnection(Connection* connection)
 {
 	if(connectionExists(connection))
 	{
@@ -221,7 +222,7 @@ void MainWnd::broadcast(const TeamRadarEvent& event)
 	log(event);
 }
 
-void MainWnd::broadcast(const QString& source, const QStringList& recipients, const QByteArray& packet)
+void MainWnd::broadcast(const QString& source, const QList<QByteArray>& recipients, const QByteArray& packet)
 {
 	foreach(QString recipient, recipients)    // broadcast to the recipients
 		if(connections.contains(recipient))   // the connection of the recipient
@@ -272,7 +273,7 @@ void MainWnd::onExport()
 
 void MainWnd::onRequestUserList()
 {
-	QStringList peers = getGroup(getSourceDeveloperName());
+	QList<QByteArray> peers = getGroup(getSourceDeveloperName());
 	QList<QByteArray> onlinePeers;
 	foreach(QString peer, peers)
 		if(connections.contains(peer))     // online
@@ -282,7 +283,17 @@ void MainWnd::onRequestUserList()
 	if(sender != 0)
 	{
 		sender->send(Sender::makeUserListResponse(onlinePeers));
-		log(TeamRadarEvent(sender->getUserName(), "Request user list"));
+		log(TeamRadarEvent(sender->getUserName(), "Request online users"));
+	}
+}
+
+void MainWnd::onRequestAllUsers()
+{
+	Sender* sender = getSender();
+	if(sender != 0)
+	{
+		sender->send(Sender::makeAllUsersResponse(UsersModel::getLoggedDevelopers()));
+		log(TeamRadarEvent(sender->getUserName(), "Request all users"));
 	}
 }
 
@@ -405,7 +416,7 @@ void MainWnd::onRequestEvents(const QStringList& users, const QStringList& event
 			sender->send(Sender::makeEventsResponse(event));
 }
 
-void MainWnd::onChat(const QStringList& recipients, const QByteArray& content)
+void MainWnd::onChat(const QList<QByteArray>& recipients, const QByteArray& content)
 {
 	QString sourceName = getSourceDeveloperName();
 	broadcast(sourceName, recipients, Sender::makeChatPacket(sourceName, content));
@@ -436,7 +447,7 @@ QString MainWnd::getSourceDeveloperName() const
 	return receiver != 0 ? receiver->getUserName() : QString();
 }
 
-QStringList MainWnd::getGroup(const QString& developer)
+QList<QByteArray> MainWnd::getGroup(const QString& developer)
 {
 	QString project = UsersModel::getProject(developer);
 	return UsersModel::getDevelopers(project);

@@ -22,7 +22,8 @@ public:
 	static void setProject(const QString& name, const QString& project);
 	static QList<QByteArray> getProjects();           // get all active projects
 	static QString getProject(const QString& name);   // get the project the developer is working on
-	static QStringList getDevelopers(const QString& project);  // get all developers working on project
+	static QList<QByteArray> getDevelopers(const QString& project);  // all developers working on project
+	static QList<QByteArray> getLoggedDevelopers();                  // within the log
 
 	bool select();
 
