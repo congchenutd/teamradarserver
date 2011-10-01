@@ -116,11 +116,22 @@ QString UsersModel::getProject(const QString& name)
 	return query.next() ? query.value(0).toString() : QString();
 }
 
-QStringList UsersModel::getDevelopers(const QString& project)
+QList<QByteArray> UsersModel::getDevelopers(const QString& project)
 {
-	QStringList result;
+	QList<QByteArray> result;
 	QSqlQuery query;
-	query.exec(tr("select Username from Users where Project = \"%1\"").arg(project));
+	query.exec(tr("select Username from Users where Username <> \"\" \
+				  and Project = \"%1\"").arg(project));
+	while(query.next())
+		result << query.value(0).toString().toUtf8();
+	return result;
+}
+
+QList<QByteArray> UsersModel::getLoggedDevelopers()
+{
+	QList<QByteArray> result;
+	QSqlQuery query;
+	query.exec(tr("select Client from Logs where Client <> \"\" group by Client"));
 	while(query.next())
 		result << query.value(0).toString().toUtf8();
 	return result;

@@ -41,7 +41,8 @@ private slots:
 	void onExport();
 	void onDelete();
 	void resizeUserTable();
-	void onRequestUserList();
+	void onRequestUserList();   // online users for certain project
+	void onRequestAllUsers();
 	void onRequestTimeSpan();
 	void onRequestProjects();
 	void onNewEvent(const QString& user, const QByteArray& message);
@@ -52,7 +53,7 @@ private slots:
 	void onRequestEvents(const QStringList& users, const QStringList& eventTypes, 
 						 const QDateTime& startTime, const QDateTime& endTime,
 						 const QStringList& phases, int fuzziness);
-	void onChat(const QStringList& recipients, const QByteArray& content);
+	void onChat(const QList<QByteArray>& recipients, const QByteArray& content);
 	void onJointProject(const QString& projectName);
 
 private:
@@ -64,9 +65,9 @@ private:
 	void    setCurrentLocalAddress(const QString& address);
 	Sender* getSender() const;                                // sender associated with the connection
 	QString getSourceDeveloperName() const;                   // get the user name of the signal
-	QStringList getGroup(const QString& developer);           // peers on the same project
+	QList<QByteArray> getGroup(const QString& developer);           // peers on the same project
 
-	void broadcast(const QString& source, const QStringList& recipients, const QByteArray& packet);
+	void broadcast(const QString& source, const QList<QByteArray>& recipients, const QByteArray& packet);
 	void broadcast(const QString& source, const QByteArray& packet);
 	void broadcast(const TeamRadarEvent& event);
 	void log      (const TeamRadarEvent& event);

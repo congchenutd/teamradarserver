@@ -14,6 +14,7 @@
 // Format of body:
 //		GREETING: [OK, CONNECTED]/[WRONG_USER]
 //		REQUEST_USERLIST: [empty], server knows the user name
+//		REQUEST_ALLUSERS: [empty], server knows the user name
 //		REQEUST_PHOTO: target user name
 //		REGISTER_PHOTO: file format#binary photo data
 //		EVENT: event type#parameters
@@ -53,7 +54,8 @@ public:
 		Chat,
 		RequestTimeSpan,
 		RequestProjects,
-		JoinProject
+		JoinProject,
+		RequestAllUsers
 	} DataType;
 
 	typedef void(Receiver::*Parser)(const QByteArray& buffer);
@@ -69,6 +71,7 @@ public:
 signals:
 	void newEvent(const QString& from, const QByteArray& message);
 	void requestUserList();
+	void requestAllUsers();
 	void requestPhoto(const QString& targetUser);
 	void requestColor(const QString& targetUser);
 	void registerPhoto(const QString& user, const QByteArray& photo);
@@ -76,7 +79,7 @@ signals:
 	void requestEvents(const QStringList& users, const QStringList& eventTypes,
 					   const QDateTime& startTime, const QDateTime& endTime, 
 					   const QStringList& phases, int fuzziness);
-	void chatMessage(const QStringList& recipients, const QByteArray& content);
+	void chatMessage(const QList<QByteArray>& recipients, const QByteArray& content);
 	void requestTimeSpan();
 	void requestProjects();
 	void joinProject(const QString& projectName);
@@ -88,6 +91,7 @@ private:
 	void parseRegisterColor  (const QByteArray& buffer);
 	void parseRequestPhoto   (const QByteArray& buffer);
 	void parseRequestUserList(const QByteArray& buffer);
+	void parseRequestAllUsers(const QByteArray& buffer);
 	void parseRequestColor   (const QByteArray& buffer);
 	void parseRequestTimeSpan(const QByteArray& buffer);
 	void parseRequestProjects(const QByteArray& buffer);
@@ -103,7 +107,6 @@ private:
 
 // A TCP socket connected to the server
 // NOT a singleton: one connection for each client
-
 // After the connection is set up, 
 // the parsing and composition of messages are handed to Receiver and Sender
 class Connection : public QTcpSocket
@@ -163,6 +166,7 @@ private:
 // Format of body:
 //		PHOTO_RESPONSE: [filename#binary photo data]/[empty]
 //		USERLIST_RESPONSE: username1#username2#...
+//		ALLUSERS_RESPONSE: username1#username2#...
 //		EVENT: user#event#[parameters]#time
 //			Format of parameters: parameter1#parameter2#...
 //		COLOR_RESPONSE: targetUser#color
@@ -186,6 +190,7 @@ public:
 	static QByteArray makePacket(const QByteArray& header, const QList<QByteArray>& bodies);
 	static QByteArray makeEventPacket(const TeamRadarEvent& event);
 	static QByteArray makeUserListResponse(const QList<QByteArray>& userList);
+	static QByteArray makeAllUsersResponse(const QList<QByteArray>& userList);
 	static QByteArray makePhotoResponse(const QString& fileName,   const QByteArray& photoData);
 	static QByteArray makeColorResponse(const QString& targetUser, const QByteArray& color);
 	static QByteArray makeEventsResponse(const TeamRadarEvent& event);
