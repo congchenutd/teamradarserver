@@ -213,7 +213,7 @@ void MainWnd::log(const TeamRadarEvent& event)
 }
 
 void MainWnd::broadcast(const QString& source, const QByteArray& packet) {
-	broadcast(source, getGroup(source), packet);   // broadcast in the group
+	broadcast(source, getCoworkers(source), packet);   // broadcast in the group
 }
 
 void MainWnd::broadcast(const TeamRadarEvent& event)
@@ -225,7 +225,7 @@ void MainWnd::broadcast(const TeamRadarEvent& event)
 void MainWnd::broadcast(const QString& source, const QList<QByteArray>& recipients, const QByteArray& packet)
 {
 	foreach(QString recipient, recipients)    // broadcast to the recipients
-		if(connections.contains(recipient))   // the connection of the recipient
+		if(connections.contains(recipient))   // the recipient if online
 		{
 			Connection* connection = connections[recipient];
 			if(connection->getUserName() != source)      // skip the source
@@ -273,15 +273,14 @@ void MainWnd::onExport()
 
 void MainWnd::onRequestUserList()
 {
-	QList<QByteArray> peers = getGroup(getSourceDeveloperName());
-	QList<QByteArray> onlinePeers;
-	foreach(QString peer, peers)
-		if(connections.contains(peer))     // online
-			onlinePeers << peer.toUtf8();
-
-	Sender* sender = getSender();
-	if(sender != 0)
+	if(Sender* sender = getSender())
 	{
+		QList<QByteArray> peers = getCoworkers(getSourceDeveloperName());
+		QList<QByteArray> onlinePeers;         // pick online users
+		foreach(QString peer, peers)
+			if(connections.contains(peer))
+				onlinePeers << peer.toUtf8();
+
 		sender->send(Sender::makeUserListResponse(onlinePeers));
 		log(TeamRadarEvent(sender->getUserName(), "Request online users"));
 	}
@@ -289,10 +288,10 @@ void MainWnd::onRequestUserList()
 
 void MainWnd::onRequestAllUsers()
 {
-	Sender* sender = getSender();
-	if(sender != 0)
+	if(Sender* sender = getSender())
 	{
-		sender->send(Sender::makeAllUsersResponse(UsersModel::getLoggedDevelopers()));
+		QList<QByteArray> peers = getCoworkers(getSourceDeveloperName());
+		sender->send(Sender::makeAllUsersResponse(peers));
 		log(TeamRadarEvent(sender->getUserName(), "Request all users"));
 	}
 }
@@ -447,10 +446,10 @@ QString MainWnd::getSourceDeveloperName() const
 	return receiver != 0 ? receiver->getUserName() : QString();
 }
 
-QList<QByteArray> MainWnd::getGroup(const QString& developer)
+QList<QByteArray> MainWnd::getCoworkers(const QString& developer)
 {
 	QString project = UsersModel::getProject(developer);
-	return UsersModel::getDevelopers(project);
+	return UsersModel::getProjectMembers(project);
 }
 
 void MainWnd::contextMenuEvent(QContextMenuEvent* event)
