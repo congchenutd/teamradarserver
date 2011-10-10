@@ -173,7 +173,7 @@ private:
 //		EVENT_RESPONSE: same as event
 //		CHAT: peerName#content
 //		TIMESPAN_RESPONSE: start#end
-//		PROJECT_RESPONSE: projectName1#name2...
+//		PROJECTS_RESPONSE: projectName1#name2...
 
 //	Formatting (makeXXX) and sending (send) are separated for flexibility
 

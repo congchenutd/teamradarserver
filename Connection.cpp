@@ -20,8 +20,10 @@ Connection::Connection(QObject *parent) : QTcpSocket(parent)
 }
 
 // transfer time out
-void Connection::timerEvent(QTimerEvent* timerEvent) {
-	if(timerEvent->timerId() == transferTimerID) {
+void Connection::timerEvent(QTimerEvent* timerEvent)
+{
+	if(timerEvent->timerId() == transferTimerID)  // the event is for this connection
+	{
 		abort();
 		killTimer(transferTimerID);
 		transferTimerID = 0;
@@ -32,15 +34,15 @@ void Connection::timerEvent(QTimerEvent* timerEvent) {
 void Connection::onReadyRead()
 {
 	do {
-		if(dataType == Receiver::Undefined && !readHeader())  // read header, size
+		if(dataType == Receiver::Undefined && !readHeader())  // read header
 			return;
-		if(!hasEnoughData())                                  // wait data
+		if(!hasEnoughData())                                  // read length, and wait data
 			return;
 		processData();
 	} while(bytesAvailable() > 0);
 }
 
-// read data type and data length
+// read data type
 bool Connection::readHeader()
 {
 	if(transferTimerID)   // reset timer
@@ -96,7 +98,7 @@ int Connection::getDataLength()
 	if(bytesAvailable() <= 0 || readDataIntoBuffer() <= 0 || !buffer.endsWith(Delimiter1))
 		return 0;
 
-	buffer.chop(1);    // chop separator
+	buffer.chop(1);    // chop delimiter
 	int number = buffer.toInt();
 	buffer.clear();
 	return number;
@@ -113,7 +115,7 @@ bool Connection::hasEnoughData()
 	if(numBytes < 0)	  // get length
 		numBytes = getDataLength();
 
-	if(bytesAvailable() < numBytes)	// wait for data
+	if(bytesAvailable() < numBytes)	// start timer and wait for data
 	{
 		transferTimerID = startTimer(TransferTimeout);
 		return false;
@@ -125,16 +127,12 @@ bool Connection::hasEnoughData()
 void Connection::processData()
 {
 	buffer = read(numBytes);
-	qDebug() << buffer;
 	if(buffer.size() != numBytes)
-	{
-		abort();
-		return;
-	}
+		return abort();
 
 	receiver->processData(dataType, buffer);
 
-	dataType = Receiver::Undefined;
+	dataType = Receiver::Undefined;   // reset status
 	numBytes = -1;
 	buffer.clear();
 }
@@ -147,7 +145,7 @@ void Connection::onDisconnected()
 
 void Connection::setReadyForUse()
 {
-	userNames.insert(userName);  // add itself
+	userNames.insert(userName);  // add itself to online name list
 	ready = true;
 	emit readyForUse();
 }
@@ -162,11 +160,9 @@ QSet<QString> Connection::userNames;
 Receiver::Receiver(Connection* c) {
 	connection = c;
 }
-
 Sender* Receiver::getSender() const {
 	return connection->getSender();
 }
-
 QString Receiver::getUserName() const {
 	return connection->getUserName();
 }
@@ -181,7 +177,7 @@ Receiver::DataType Receiver::guessDataType(const QByteArray& h)
 
 void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer) {
 	if(dataType != Undefined)
-		(this->*parsers[dataType])(buffer);
+		(this->*parsers[dataType])(buffer);   // call specific parser
 }
 
 void Receiver::parseGreeting(const QByteArray& buffer)
@@ -200,6 +196,7 @@ void Receiver::parseGreeting(const QByteArray& buffer)
 	}
 }
 
+// offline events request
 void Receiver::parseEvents(const QByteArray& buffer)
 {
 	QList<QByteArray> sections = buffer.split(Connection::Delimiter1);
@@ -289,12 +286,15 @@ void Receiver::init()
 	parsers.insert(JoinProject,     &Receiver::parseJoinProject);
 }
 
-QMap<QString, Receiver::DataType> Receiver::dataTypes;
+QMap<QString, Receiver::DataType>          Receiver::dataTypes;
 QMap<Receiver::DataType, Receiver::Parser> Receiver::parsers;
 
 //////////////////////////////////////////////////////////////////////////
 Sender::Sender(Connection* c) {
 	connection = c;
+}
+QString Sender::getUserName() const {
+	return connection->getUserName();
 }
 
 void Sender::send(const QByteArray& packet) {
@@ -302,13 +302,10 @@ void Sender::send(const QByteArray& packet) {
 		connection->write(packet);
 }
 
-QString Sender::getUserName() const {
-	return connection->getUserName();
-}
-
+// make a packet from header and body
+// add length and delimiters
 QByteArray Sender::makePacket(const QByteArray& header, const QByteArray& body)
 {
-//	QByteArray b = body.isEmpty() ? "P" : body;
 	QByteArray packet(header);
 	if(!header.endsWith(Connection::Delimiter1))
 		packet.append(Connection::Delimiter1);
@@ -316,6 +313,7 @@ QByteArray Sender::makePacket(const QByteArray& header, const QByteArray& body)
 	return packet;
 }
 
+// join multiple bodies
 QByteArray Sender::makePacket(const QByteArray& header, const QList<QByteArray>& bodies)
 {
 	QByteArray joined;
@@ -345,6 +343,8 @@ QByteArray Sender::makeColorResponse(const QString& targetUser, const QByteArray
 	return makePacket("COLOR_RESPONSE", QList<QByteArray>() << targetUser.toUtf8() << color);
 }
 
+// respond to offline events request
+// one request results in multiple respond, one respond for one event
 QByteArray Sender::makeEventsResponse(const TeamRadarEvent& event) {
 	return makePacket("EVENT_RESPONSE", QList<QByteArray>() 
 		<< event.userName.toUtf8()   << event.eventType.toUtf8() 

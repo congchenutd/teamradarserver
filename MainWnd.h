@@ -58,17 +58,18 @@ private slots:
 
 private:
 	void createTray();
-	void updateLocalAddresses();                              // find local IPs
+	void updateLocalAddresses();                               // find local IPs
 	void removeConnection(Connection* connection);
 	bool connectionExists(const Connection* connection) const;
 	QString getCurrentLocalAddress() const;
 	void    setCurrentLocalAddress(const QString& address);
-	Sender* getSender() const;                                // sender associated with the connection
-	QString getSourceDeveloperName() const;                   // get the user name of the signal
-	QList<QByteArray> getGroup(const QString& developer);           // peers on the same project
+	Sender* getSender() const;                                 // sender associated with the connection
+	QString getSourceDeveloperName() const;                    // get the user name of the signal
+	QList<QByteArray> getCoworkers(const QString& developer);  // peers on the same project
 
+	// to specific recipients (when chatting)
 	void broadcast(const QString& source, const QList<QByteArray>& recipients, const QByteArray& packet);
-	void broadcast(const QString& source, const QByteArray& packet);
+	void broadcast(const QString& source, const QByteArray& packet);   // to the group
 	void broadcast(const TeamRadarEvent& event);
 	void log      (const TeamRadarEvent& event);
 
