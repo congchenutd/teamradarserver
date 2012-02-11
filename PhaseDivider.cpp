@@ -47,6 +47,9 @@ Events PhaseDivider::addPhase(const QString& phase) const
 
 Events PhaseDivider::getEvents(const QStringList& phases) const
 {
+	if(phases.isEmpty())
+		return originalEvents;
+
 	Events result;
 	foreach(QString phase, phases)
 		result << addPhase(phase);

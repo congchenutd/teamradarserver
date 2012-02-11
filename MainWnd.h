@@ -10,6 +10,7 @@
 #include "ui_MainWnd.h"
 #include "Server.h"
 #include "UsersModel.h"
+#include "TeamRadarEvent.h"
 
 class Setting;
 struct TeamRadarEvent;
@@ -55,6 +56,7 @@ private slots:
 						 const QStringList& phases, int fuzziness);
 	void onChat(const QList<QByteArray>& recipients, const QByteArray& content);
 	void onJointProject(const QString& projectName);
+	void onRequestRecent(int count);
 
 private:
 	void createTray();
@@ -72,6 +74,11 @@ private:
 	void broadcast(const QString& source, const QByteArray& packet);   // to the group
 	void broadcast(const TeamRadarEvent& event);
 	void log      (const TeamRadarEvent& event);
+	Events queryEvents(int count = -1,
+					   const QStringList& users      = QStringList(),
+					   const QStringList& eventTypes = QStringList(),
+					   const QDateTime&   startTime  = QDateTime(),
+					   const QDateTime&   endTime    = QDateTime());
 
 public:
 	enum {ID, TIME, CLIENT, EVENT, PARAMETERS};  // for the log model
