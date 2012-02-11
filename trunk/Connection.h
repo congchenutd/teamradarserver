@@ -32,7 +32,7 @@
 //		REQUEST_TIMESPAN: [empty]
 //		REQUEST_PROJECTS: [empty]
 //		JOIN_PROJECT: projectname
-//		RENAME: new name
+//		REQUEST_RECENT: event count
 class Connection;
 class Sender;
 
@@ -55,7 +55,8 @@ public:
 		RequestTimeSpan,
 		RequestProjects,
 		JoinProject,
-		RequestAllUsers
+		RequestAllUsers,
+		RequestRecent
 	} DataType;
 
 	typedef void(Receiver::*Parser)(const QByteArray& buffer);
@@ -83,6 +84,7 @@ signals:
 	void requestTimeSpan();
 	void requestProjects();
 	void joinProject(const QString& projectName);
+	void requestRecent(int count);
 
 private:
 	void parseGreeting       (const QByteArray& buffer);
@@ -98,6 +100,7 @@ private:
 	void parseJoinProject    (const QByteArray& buffer);
 	void parseEvents         (const QByteArray& buffer);
 	void parseChat           (const QByteArray& buffer);
+	void parseRequestRecent  (const QByteArray& buffer);
 
 private:
 	Connection* connection;
@@ -169,8 +172,9 @@ private:
 //		ALLUSERS_RESPONSE: username1#username2#...
 //		EVENT: user#event#[parameters]#time
 //			Format of parameters: parameter1#parameter2#...
-//		COLOR_RESPONSE: targetUser#color
 //		EVENT_RESPONSE: same as event
+//		RECENT_EVENT_RESPONSE: same as event
+//		COLOR_RESPONSE: targetUser#color
 //		CHAT: peerName#content
 //		TIMESPAN_RESPONSE: start#end
 //		PROJECTS_RESPONSE: projectName1#name2...
@@ -194,9 +198,13 @@ public:
 	static QByteArray makePhotoResponse(const QString& fileName,   const QByteArray& photoData);
 	static QByteArray makeColorResponse(const QString& targetUser, const QByteArray& color);
 	static QByteArray makeEventsResponse(const TeamRadarEvent& event);
+	static QByteArray makeRecentEventsResponse(const TeamRadarEvent& event);
 	static QByteArray makeChatPacket(const QString& user, const QByteArray& content);
 	static QByteArray makeTimeSpanResponse(const QByteArray& start, const QByteArray& end);
 	static QByteArray makeProjectsResponse(const QList<QByteArray>& projects);
+
+private:
+	static QByteArray makeEventPacket(const QByteArray& header, const TeamRadarEvent& event);
 
 private:
 	Connection* connection;

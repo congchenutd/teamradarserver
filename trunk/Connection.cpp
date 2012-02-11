@@ -254,6 +254,9 @@ void Receiver::parseRequestProjects(const QByteArray&) {
 void Receiver::parseJoinProject(const QByteArray& buffer) {
 	emit joinProject(buffer);
 }
+void Receiver::parseRequestRecent(const QByteArray& buffer) {
+	emit requestRecent(buffer.toInt());
+}
 
 void Receiver::init()
 {
@@ -270,6 +273,7 @@ void Receiver::init()
 	dataTypes.insert("REQUEST_PROJECTS", RequestProjects);
 	dataTypes.insert("JOIN_PROJECT",     JoinProject);
 	dataTypes.insert("REQUEST_ALLUSERS", RequestAllUsers);
+	dataTypes.insert("REQUEST_RECENT",   RequestRecent);
 
 	parsers.insert(Greeting,        &Receiver::parseGreeting);
 	parsers.insert(Event,           &Receiver::parseEvent);
@@ -284,6 +288,7 @@ void Receiver::init()
 	parsers.insert(RequestTimeSpan, &Receiver::parseRequestTimeSpan);
 	parsers.insert(RequestProjects, &Receiver::parseRequestProjects);
 	parsers.insert(JoinProject,     &Receiver::parseJoinProject);
+	parsers.insert(RequestRecent,   &Receiver::parseRequestRecent);
 }
 
 QMap<QString, Receiver::DataType>          Receiver::dataTypes;
@@ -323,11 +328,25 @@ QByteArray Sender::makePacket(const QByteArray& header, const QList<QByteArray>&
 	return makePacket(header, joined);
 }
 
+QByteArray Sender::makeEventPacket(const QByteArray& header, const TeamRadarEvent &event) {
+	return makePacket(header, QList<QByteArray>() << event.userName.toUtf8()
+												  << event.eventType.toUtf8()
+												  << event.parameters.toUtf8()
+												  << event.time.toString(MainWnd::dateTimeFormat).toUtf8());
+}
+
 QByteArray Sender::makeEventPacket(const TeamRadarEvent& event) {
-	return makePacket("EVENT", QList<QByteArray>() << event.userName.toUtf8()
-												   << event.eventType.toUtf8()
-												   << event.parameters.toUtf8()
-												   << event.time.toString(MainWnd::dateTimeFormat).toUtf8());
+	return makeEventPacket("EVENT", event);
+}
+
+// respond to offline events request
+// one request results in multiple respond, one respond for one event
+QByteArray Sender::makeEventsResponse(const TeamRadarEvent& event) {
+	return makeEventPacket("EVENT_RESPONSE", event);
+}
+
+QByteArray Sender::makeRecentEventsResponse(const TeamRadarEvent& event) {
+	return makeEventPacket("RECENT_EVENT_RESPONSE", event);
 }
 
 QByteArray Sender::makeUserListResponse(const QList<QByteArray>& userList) {
@@ -343,14 +362,6 @@ QByteArray Sender::makeColorResponse(const QString& targetUser, const QByteArray
 	return makePacket("COLOR_RESPONSE", QList<QByteArray>() << targetUser.toUtf8() << color);
 }
 
-// respond to offline events request
-// one request results in multiple respond, one respond for one event
-QByteArray Sender::makeEventsResponse(const TeamRadarEvent& event) {
-	return makePacket("EVENT_RESPONSE", QList<QByteArray>() 
-		<< event.userName.toUtf8()   << event.eventType.toUtf8() 
-		<< event.parameters.toUtf8() << event.time.toString(MainWnd::dateTimeFormat).toUtf8());
-}
-
 QByteArray Sender::makeChatPacket(const QString& user, const QByteArray& content) {
 	return makePacket("CHAT", QList<QByteArray>() << user.toUtf8() << content);
 }
@@ -360,3 +371,5 @@ QByteArray Sender::makeTimeSpanResponse(const QByteArray& start, const QByteArra
 QByteArray Sender::makeProjectsResponse(const QList<QByteArray>& projects) {
 	return makePacket("PROJECTS_RESPONSE", projects);
 }
+
+

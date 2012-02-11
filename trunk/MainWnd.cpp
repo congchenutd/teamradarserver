@@ -1,6 +1,5 @@
 #include "MainWnd.h"
 #include "Connection.h"
-#include "TeamRadarEvent.h"
 #include "../ImageColorBoolModel/ImageColorBoolProxy.h"
 #include "../ImageColorBoolModel/ImageColorBoolDelegate.h"
 #include "PhaseDivider.h"
@@ -133,6 +132,7 @@ void MainWnd::onReadyForUse()
 			this,     SLOT(onRequestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)));
 	connect(receiver, SIGNAL(chatMessage(QList<QByteArray>, QByteArray)), this, SLOT(onChat(QList<QByteArray>, QByteArray)));
 	connect(receiver, SIGNAL(joinProject(QString)), this, SLOT(onJointProject(QString)));
+	connect(receiver, SIGNAL(requestRecent(int)), this, SLOT(onRequestRecent(int)));
 
 	// new client
 	connections.insert(connection->getUserName(), connection);
@@ -383,26 +383,38 @@ void MainWnd::resizeUserTable()
 	ui.tvUsers->resizeColumnsToContents();
 }
 
+Events MainWnd::queryEvents(int count, const QStringList &users, const QStringList &eventTypes, const QDateTime &startTime, const QDateTime &endTime)
+{
+	// query without phases
+	QString userClause  = users     .isEmpty() ? "1" : tr("Client in (\"%1\")").arg(users     .join("\", \""));
+	QString eventClause = eventTypes.isEmpty() ? "1" : tr("Event  in (\"%1\")").arg(eventTypes.join("\", \""));
+	QString timeClause  = startTime.isNull() || endTime.isNull() ? "1"
+						: tr("Time between \"%1\" and \"%2\"").arg(startTime.toString(dateTimeFormat))
+															  .arg(endTime  .toString(dateTimeFormat));
+	QString countClause = tr("LIMIT %1").arg(count);
+	QSqlQuery query;
+	query.exec(tr("select Client, Event, Parameters, Time from Logs \
+				  where %1 and %2 and %3 %4")
+			   .arg(userClause)
+			   .arg(eventClause)
+			   .arg(timeClause)
+			   .arg(countClause));
+
+	Events result;
+	while(query.next())
+		result << TeamRadarEvent(query.value(0).toString(),
+								 query.value(1).toString(),
+								 query.value(2).toString(),
+								 query.value(3).toString());
+	return result;
+}
+
 void MainWnd::onRequestEvents(const QStringList& users, const QStringList& eventTypes,
 							  const QDateTime& startTime, const QDateTime& endTime,
 							  const QStringList& phases, int fuzziness)
 {
 	// query without phases
-	QString userClause  = "\"" + users.     join("\", \"") + "\"";
-	QString eventClause = "\"" + eventTypes.join("\", \"") + "\"";
-	QSqlQuery query;
-	query.exec(tr("select Client, Event, Parameters, Time from Logs \
-				  where Client in (%1) and \
-				        Event in (%2) and \
-				        Time between \"%3\" and \"%4\"")
-		.arg(userClause).arg(eventClause).arg(startTime.toString(dateTimeFormat)).arg(endTime.toString(dateTimeFormat)));
-
-	Events events;
-	while(query.next())
-		events << TeamRadarEvent(query.value(0).toString(),
-								 query.value(1).toString(),
-								 query.value(2).toString(),
-								 query.value(3).toString());
+	Events events = queryEvents(-1, users, eventTypes, startTime, endTime);
 
 	// filter by phases
 	PhaseDivider divider(events, fuzziness);
@@ -432,6 +444,17 @@ void MainWnd::onJointProject(const QString& projectName)
 	UsersModel::setProject(developer, projectName);
 	modelUsers.select();
 	broadcast(TeamRadarEvent(developer, "JOINED", projectName));
+}
+
+void MainWnd::onRequestRecent(int count)
+{
+	Events events = queryEvents(count);
+
+	// send
+	Sender* sender = getSender();
+	if(sender != 0)
+		foreach(TeamRadarEvent event, events)
+			sender->send(Sender::makeRecentEventsResponse(event));
 }
 
 Sender* MainWnd::getSender() const
