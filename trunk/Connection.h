@@ -8,55 +8,40 @@
 #include <QSet>
 #include "MainWnd.h"
 
-// Parses the message header & body from Connection
-// Clients do not send their user names, as they have signed up with GREETING.
-// Format of packet: header#size#body
-// Format of body:
-//		GREETING: [OK, CONNECTED]/[WRONG_USER]
-//		REQUEST_USERLIST: [empty], server knows the user name
-//		REQUEST_ALLUSERS: [empty], server knows the user name
-//		REQEUST_PHOTO: target user name
-//		REGISTER_PHOTO: file format#binary photo data
-//		EVENT: event type#parameters
-//			Format of parameters: parameter1#parameter2#...
-//		REGISTER_COLOR: color
-//		REQUEST_COLOR: target user name
-//		REQUEST_EVENTS: user list#event types#time span#phases#fuzziness
-//			user list: name1;name2;...
-//			event types: type1;type2;...
-//			time span: start time;end time
-//			phases: phase1;phase2;...
-//			fuzziness: an integer for percentage
-//		CHAT: recipients#content
-//			recipients = name1;name2;...
-//		REQUEST_TIMESPAN: [empty]
-//		REQUEST_PROJECTS: [empty]
-//		JOIN_PROJECT: projectname
-//		REQUEST_RECENT: event count
 class Connection;
 class Sender;
 
+// Parses the message header & body from Connection
+// Clients do not send their user names, as they have signed up with GREETING.
+// Format of packet: header#size#body
 class Receiver : public QObject
 {
 	Q_OBJECT
 
 public:
 	typedef enum {
-		Undefined,
-		Greeting,
-		Event,
-		RequestUserList,
-		RegisterPhoto,
-		RegisterColor,
-		RequestPhoto,
-		RequestColor,
-		RequestEvents,
-		Chat,
-		RequestTimeSpan,
-		RequestProjects,
-		JoinProject,
-		RequestAllUsers,
-		RequestRecent
+		Undefined,         // Format of body see below:
+		Greeting,          // GREETING: [OK, CONNECTED]/[WRONG_USER]
+		Event,             // EVENT: event type#parameters
+						   //	Format of parameters: parameter1#parameter2#...
+		RequestUserList,   // REQUEST_USERLIST: [empty], server knows the user name
+		RegisterPhoto,     // REGISTER_PHOTO: file format#binary photo data
+		RegisterColor,     // REGISTER_COLOR: color
+		RequestPhoto,      // REQEUST_PHOTO: target user name
+		RequestColor,      // REQUEST_COLOR: target user name
+		RequestEvents,	   // REQUEST_EVENTS: user list#event types#time span#phases#fuzziness
+						   //	user list: name1;name2;...
+						   //	event types: type1;type2;...
+						   //	time span: start time;end time
+						   //	phases: phase1;phase2;...
+						   //	fuzziness: an integer for percentage
+		Chat,              // CHAT: recipients#content
+						   //	recipients = name1;name2;...
+		RequestTimeSpan,   // REQUEST_TIMESPAN: [empty]
+		RequestProjects,   // REQUEST_PROJECTS: [empty]
+		JoinProject,       // JOIN_PROJECT: projectname
+		RequestAllUsers,   // REQUEST_ALLUSERS: [empty], server knows the user name
+		RequestRecent      // REQUEST_RECENT: event count
 	} DataType;
 
 	typedef void(Receiver::*Parser)(const QByteArray& buffer);
