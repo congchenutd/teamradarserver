@@ -394,7 +394,7 @@ Events MainWnd::queryEvents(int count, const QStringList &users, const QStringLi
 	QString countClause = tr("LIMIT %1").arg(count);
 	QSqlQuery query;
 	query.exec(tr("select Client, Event, Parameters, Time from Logs \
-				  where %1 and %2 and %3 %4")
+				  where %1 and %2 and %3 %4 order by Time desc")
 			   .arg(userClause)
 			   .arg(eventClause)
 			   .arg(timeClause)
