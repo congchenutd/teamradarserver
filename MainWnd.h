@@ -51,7 +51,7 @@ private slots:
 	void onRegisterColor(const QString& user, const QByteArray& color);
 	void onRequestPhoto (const QString& targetUser);
 	void onRequestColor (const QString& targetUser);
-	void onRequestEvents(const QStringList& users, const QStringList& eventTypes, 
+	void onRequestEvents(const QStringList& users, const QStringList& eventTypes,
 						 const QDateTime& startTime, const QDateTime& endTime,
 						 const QStringList& phases, int fuzziness);
 	void onChat(const QList<QByteArray>& recipients, const QByteArray& content);
@@ -65,9 +65,10 @@ private:
 	bool connectionExists(const Connection* connection) const;
 	QString getCurrentLocalAddress() const;
 	void    setCurrentLocalAddress(const QString& address);
-	Sender* getSender() const;                                 // sender associated with the connection
-	QString getSourceDeveloperName() const;                    // get the user name of the signal
-	QList<QByteArray> getCoworkers(const QString& developer);  // peers on the same project
+	Sender* getSender() const;                                   // sender associated with the connection
+	QString getSourceUserName() const;                           // get the user name of the signal
+	QList<QByteArray> getCoworkers(const QString& user) const;   // peers on the same project
+	QList<QByteArray> getOnlineUsers() const;
 
 	// to specific recipients (when chatting)
 	void broadcast(const QString& source, const QList<QByteArray>& recipients, const QByteArray& packet);
