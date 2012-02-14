@@ -10,6 +10,7 @@
 #include <QNetworkInterface>
 #include <QSqlQuery>
 #include <QFileDialog>
+#include <QtAlgorithms>
 
 MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	: QDialog(parent, flags)
@@ -137,7 +138,7 @@ void MainWnd::onReadyForUse()
 	// new client
 	connections.insert(connection->getUserName(), connection);
 	log(TeamRadarEvent(connection->getUserName(), "Connected"));
-	
+
 	// refresh the user table
 	UsersModel::addUser   (connection->getUserName());
 	UsersModel::makeOnline(connection->getUserName());
@@ -170,7 +171,7 @@ void MainWnd::updateLocalAddresses()
 		foreach(QNetworkAddressEntry entry, interface.addressEntries())
 		{
 			QHostAddress address = entry.ip();
-			if(address != QHostAddress::LocalHost && 
+			if(address != QHostAddress::LocalHost &&
 			   address.protocol() == QAbstractSocket::IPv4Protocol)   // exclude 127.0.0.1
 				ui.cbLocalAddresses->addItem(address.toString());
 		}
@@ -235,7 +236,7 @@ void MainWnd::broadcast(const QString& source, const QList<QByteArray>& recipien
 
 void MainWnd::onClear()
 {
-	if(QMessageBox::warning(this, tr("Warning"), tr("Really clear the log?"), 
+	if(QMessageBox::warning(this, tr("Warning"), tr("Really clear the log?"),
 		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::Yes)
 	{
 		QSqlQuery query;
@@ -245,7 +246,7 @@ void MainWnd::onClear()
 }
 
 void MainWnd::onAbout() {
-	QMessageBox::about(this, tr("About"), 
+	QMessageBox::about(this, tr("About"),
 		tr("<H3>TeamRadar Server</H3>"
 		   "<P>Cong Chen</P>"
 		   "<P>2011.8.18</P>"
@@ -254,7 +255,7 @@ void MainWnd::onAbout() {
 
 void MainWnd::onExport()
 {
-	QString fileName = QFileDialog::getSaveFileName(this, tr("Export"), "Export.txt", 
+	QString fileName = QFileDialog::getSaveFileName(this, tr("Export"), "Export.txt",
 											"Text files (*.txt);;All files (*.*)");
 	if(fileName.isEmpty())
 		return;
@@ -275,12 +276,7 @@ void MainWnd::onRequestUserList()
 {
 	if(Sender* sender = getSender())
 	{
-		QList<QByteArray> peers = getCoworkers(getSourceDeveloperName());
-		QList<QByteArray> onlinePeers;         // pick online users
-		foreach(QString peer, peers)
-			if(connections.contains(peer))
-				onlinePeers << peer.toUtf8();
-
+		QList<QByteArray> onlinePeers = getOnlineUsers();
 		sender->send(Sender::makeUserListResponse(onlinePeers));
 		log(TeamRadarEvent(sender->getUserName(), "Request online users"));
 	}
@@ -290,7 +286,7 @@ void MainWnd::onRequestAllUsers()
 {
 	if(Sender* sender = getSender())
 	{
-		QList<QByteArray> peers = getCoworkers(getSourceDeveloperName());
+		QList<QByteArray> peers = getCoworkers(getSourceUserName());
 		sender->send(Sender::makeAllUsersResponse(peers));
 		log(TeamRadarEvent(sender->getUserName(), "Request all users"));
 	}
@@ -383,7 +379,8 @@ void MainWnd::resizeUserTable()
 	ui.tvUsers->resizeColumnsToContents();
 }
 
-Events MainWnd::queryEvents(int count, const QStringList &users, const QStringList &eventTypes, const QDateTime &startTime, const QDateTime &endTime)
+Events MainWnd::queryEvents(int count, const QStringList& users, const QStringList& eventTypes,
+							const QDateTime& startTime, const QDateTime& endTime)
 {
 	// query without phases
 	QString userClause  = users     .isEmpty() ? "1" : tr("Client in (\"%1\")").arg(users     .join("\", \""));
@@ -394,7 +391,7 @@ Events MainWnd::queryEvents(int count, const QStringList &users, const QStringLi
 	QString countClause = tr("LIMIT %1").arg(count);
 	QSqlQuery query;
 	query.exec(tr("select Client, Event, Parameters, Time from Logs \
-				  where %1 and %2 and %3 %4 order by Time desc")
+				  where %1 and %2 and %3 order by Time desc %4")
 			   .arg(userClause)
 			   .arg(eventClause)
 			   .arg(timeClause)
@@ -406,6 +403,7 @@ Events MainWnd::queryEvents(int count, const QStringList &users, const QStringLi
 								 query.value(1).toString(),
 								 query.value(2).toString(),
 								 query.value(3).toString());
+	qSort(result.begin(), result.end());    // ascending order
 	return result;
 }
 
@@ -429,18 +427,18 @@ void MainWnd::onRequestEvents(const QStringList& users, const QStringList& event
 
 void MainWnd::onChat(const QList<QByteArray>& recipients, const QByteArray& content)
 {
-	QString sourceName = getSourceDeveloperName();
+	QString sourceName = getSourceUserName();
 	broadcast(sourceName, recipients, Sender::makeChatPacket(sourceName, content));
 }
 
 void MainWnd::onJointProject(const QString& projectName)
 {
 	// remove the developer from the old group
-	QString developer = getSourceDeveloperName();
+	QString developer = getSourceUserName();
 	QString oldProject = UsersModel::getProject(developer);
 	if(!oldProject.isEmpty() && oldProject != projectName)
 		broadcast(TeamRadarEvent(developer, "DISCONNECTED", oldProject));
-	
+
 	UsersModel::setProject(developer, projectName);
 	modelUsers.select();
 	broadcast(TeamRadarEvent(developer, "JOINED", projectName));
@@ -451,10 +449,12 @@ void MainWnd::onRequestRecent(int count)
 	Events events = queryEvents(count);
 
 	// send
-	Sender* sender = getSender();
-	if(sender != 0)
+	if(Sender* sender = getSender())
+	{
 		foreach(TeamRadarEvent event, events)
-			sender->send(Sender::makeRecentEventsResponse(event));
+			if(event.userName != sender->getUserName())
+				sender->send(Sender::makeRecentEventsResponse(event));
+	}
 }
 
 Sender* MainWnd::getSender() const
@@ -463,16 +463,24 @@ Sender* MainWnd::getSender() const
 	return receiver != 0 ? receiver->getSender() : 0;
 }
 
-QString MainWnd::getSourceDeveloperName() const
+QString MainWnd::getSourceUserName() const
 {
 	Receiver* receiver = qobject_cast<Receiver*>(sender());
 	return receiver != 0 ? receiver->getUserName() : QString();
 }
 
-QList<QByteArray> MainWnd::getCoworkers(const QString& developer)
+QList<QByteArray> MainWnd::getCoworkers(const QString& user) const {
+	return UsersModel::getProjectMembers(UsersModel::getProject(user));
+}
+
+QList<QByteArray> MainWnd::getOnlineUsers() const
 {
-	QString project = UsersModel::getProject(developer);
-	return UsersModel::getProjectMembers(project);
+	QList<QByteArray> allPeers = getCoworkers(getSourceUserName());
+	QList<QByteArray> onlinePeers;         // pick online users
+	foreach(QString peer, allPeers)
+		if(connections.contains(peer))
+			onlinePeers << peer.toUtf8();
+	return onlinePeers;
 }
 
 void MainWnd::contextMenuEvent(QContextMenuEvent* event)
@@ -494,7 +502,7 @@ void MainWnd::onDelete()
 	if(idxes.isEmpty())
 		return;
 
-	if(QMessageBox::warning(this, tr("Warning"), tr("Really delete this entry?"), 
+	if(QMessageBox::warning(this, tr("Warning"), tr("Really delete this entry?"),
 		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::No)
 		return;
 
