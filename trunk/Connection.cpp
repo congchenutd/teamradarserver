@@ -254,12 +254,13 @@ void Receiver::parseRequestProjects(const QByteArray&) {
 void Receiver::parseJoinProject(const QByteArray& buffer) {
 	emit joinProject(buffer);
 }
-void Receiver::parseRequestRecent(const QByteArray& buffer) {
-	emit requestRecent(buffer.toInt());
+void Receiver::parseRequestLocation(const QByteArray& buffer) {
+	emit requestLocation(buffer);
 }
 
 void Receiver::init()
 {
+	// header -> date type
 	dataTypes.insert("GREETING",         Greeting);
 	dataTypes.insert("EVENT",            Event);
 	dataTypes.insert("REGISTER_PHOTO",   RegisterPhoto);
@@ -273,8 +274,9 @@ void Receiver::init()
 	dataTypes.insert("REQUEST_PROJECTS", RequestProjects);
 	dataTypes.insert("JOIN_PROJECT",     JoinProject);
 	dataTypes.insert("REQUEST_ALLUSERS", RequestAllUsers);
-	dataTypes.insert("REQUEST_RECENT",   RequestRecent);
+	dataTypes.insert("REQUEST_LOCATION", RequestLocation);
 
+	// data type -> parser
 	parsers.insert(Greeting,        &Receiver::parseGreeting);
 	parsers.insert(Event,           &Receiver::parseEvent);
 	parsers.insert(RegisterPhoto,   &Receiver::parseRegisterPhoto);
@@ -288,7 +290,7 @@ void Receiver::init()
 	parsers.insert(RequestTimeSpan, &Receiver::parseRequestTimeSpan);
 	parsers.insert(RequestProjects, &Receiver::parseRequestProjects);
 	parsers.insert(JoinProject,     &Receiver::parseJoinProject);
-	parsers.insert(RequestRecent,   &Receiver::parseRequestRecent);
+	parsers.insert(RequestLocation, &Receiver::parseRequestLocation);
 }
 
 QMap<QString, Receiver::DataType>          Receiver::dataTypes;
@@ -345,9 +347,6 @@ QByteArray Sender::makeEventsResponse(const TeamRadarEvent& event) {
 	return makeEventPacket("EVENT_RESPONSE", event);
 }
 
-QByteArray Sender::makeRecentEventsResponse(const TeamRadarEvent& event) {
-	return makeEventPacket("RECENT_EVENT_RESPONSE", event);
-}
 
 QByteArray Sender::makeUserListResponse(const QList<QByteArray>& userList) {
 	return makePacket("USERLIST_RESPONSE", userList);
@@ -361,7 +360,6 @@ QByteArray Sender::makePhotoResponse(const QString& fileName, const QByteArray& 
 QByteArray Sender::makeColorResponse(const QString& targetUser, const QByteArray& color) {
 	return makePacket("COLOR_RESPONSE", QList<QByteArray>() << targetUser.toUtf8() << color);
 }
-
 QByteArray Sender::makeChatPacket(const QString& user, const QByteArray& content) {
 	return makePacket("CHAT", QList<QByteArray>() << user.toUtf8() << content);
 }
@@ -370,6 +368,10 @@ QByteArray Sender::makeTimeSpanResponse(const QByteArray& start, const QByteArra
 }
 QByteArray Sender::makeProjectsResponse(const QList<QByteArray>& projects) {
 	return makePacket("PROJECTS_RESPONSE", projects);
+}
+QByteArray Sender::makeLocationResponse(const QString& targetUser, const QString& location) {
+	return makePacket("LOCATION_RESPONSE", QList<QByteArray>() << targetUser.toUtf8()
+															   << location.toUtf8());
 }
 
 

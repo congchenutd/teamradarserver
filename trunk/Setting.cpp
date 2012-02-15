@@ -1,5 +1,6 @@
 #include "Setting.h"
 #include <QDir>
+#include <QResource>
 
 Setting::Setting(const QString& fileName) : MySetting<Setting>(fileName)
 {
@@ -34,4 +35,12 @@ void Setting::setPort(quint16 port) {
 
 QString Setting::getPhotoDir() const {
 	return value("PhotoPath").toString();
+}
+
+QString Setting::getCompileDate() const
+{
+	// this resource file will be generated after running CompileDate.bat
+	QResource resource(":/MainWnd/CompileDate.txt");
+	QString result = (char*)resource.data();
+	return result.isEmpty() ? "Unknown" : result;
 }

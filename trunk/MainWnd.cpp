@@ -10,7 +10,7 @@
 #include <QNetworkInterface>
 #include <QSqlQuery>
 #include <QFileDialog>
-#include <QtAlgorithms>
+#include <QItemSelectionModel>
 
 MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	: QDialog(parent, flags)
@@ -21,9 +21,10 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 
 	// load setting
 	setting = Setting::getInstance();
-	setCurrentLocalAddress(setting->getIPAddress());   // ip
-	ui.sbPort->setValue(setting->getPort());           // port
-	onPortChanged(setting->getPort());                 // listen
+	ui.cbLocalAddresses->setCurrentIndex(
+				ui.cbLocalAddresses->findText(setting->getIPAddress()));
+	ui.sbPort->setValue(setting->getPort());
+	onPortChanged(setting->getPort());           // listen
 
 	// tables
 	modelLogs.setTable("Logs");
@@ -53,10 +54,10 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	resizeUserTable();
 
 	connect(&server, SIGNAL(newConnection(Connection*)), this, SLOT(onNewConnection(Connection*)));
-	connect(ui.sbPort,   SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
-	connect(&modelUsers, SIGNAL(selected()),        this, SLOT(resizeUserTable()));
-	connect(ui.btClear,  SIGNAL(clicked()),         this, SLOT(onClear()));
-	connect(ui.btExport, SIGNAL(clicked()),         this, SLOT(onExport()));
+	connect(ui.sbPort,     SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
+	connect(&modelUsers,   SIGNAL(selected()),        this, SLOT(resizeUserTable()));
+	connect(ui.btClearLog, SIGNAL(clicked()),         this, SLOT(onClearLog()));
+	connect(ui.btExport,   SIGNAL(clicked()),         this, SLOT(onExport()));
 }
 
 void MainWnd::createTray()
@@ -85,7 +86,7 @@ void MainWnd::closeEvent(QCloseEvent* event)
 void MainWnd::onShutdown()
 {
 	trayIcon->hide();
-	setting->setIPAddress(getCurrentLocalAddress());  // save setting
+	setting->setIPAddress(ui.cbLocalAddresses->currentText());  // save setting
 	setting->setPort(ui.sbPort->value());
 	Setting::destroySettingManager();
 	qApp->quit();
@@ -127,13 +128,13 @@ void MainWnd::onReadyForUse()
 	connect(receiver, SIGNAL(newEvent(QString, QByteArray)), this, SLOT(onNewEvent(QString, QByteArray)));
 	connect(receiver, SIGNAL(registerPhoto(QString, QByteArray)), this, SLOT(onRegisterPhoto(QString, QByteArray)));
 	connect(receiver, SIGNAL(registerColor(QString, QByteArray)), this, SLOT(onRegisterColor(QString, QByteArray)));
-	connect(receiver, SIGNAL(requestPhoto(QString)), this, SLOT(onRequestPhoto(QString)));
-	connect(receiver, SIGNAL(requestColor(QString)), this, SLOT(onRequestColor(QString)));
+	connect(receiver, SIGNAL(requestPhoto   (QString)), this, SLOT(onRequestPhoto   (QString)));
+	connect(receiver, SIGNAL(requestColor   (QString)), this, SLOT(onRequestColor   (QString)));
+	connect(receiver, SIGNAL(requestLocation(QString)), this, SLOT(onRequestLocation(QString)));
 	connect(receiver, SIGNAL(requestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)),
 			this,     SLOT(onRequestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)));
 	connect(receiver, SIGNAL(chatMessage(QList<QByteArray>, QByteArray)), this, SLOT(onChat(QList<QByteArray>, QByteArray)));
 	connect(receiver, SIGNAL(joinProject(QString)), this, SLOT(onJointProject(QString)));
-	connect(receiver, SIGNAL(requestRecent(int)), this, SLOT(onRequestRecent(int)));
 
 	// new client
 	connections.insert(connection->getUserName(), connection);
@@ -175,15 +176,6 @@ void MainWnd::updateLocalAddresses()
 			   address.protocol() == QAbstractSocket::IPv4Protocol)   // exclude 127.0.0.1
 				ui.cbLocalAddresses->addItem(address.toString());
 		}
-}
-
-QString MainWnd::getCurrentLocalAddress() const {
-	return ui.cbLocalAddresses->currentText();
-}
-
-void MainWnd::setCurrentLocalAddress(const QString& address) {
-	ui.cbLocalAddresses->setCurrentIndex(
-		ui.cbLocalAddresses->findText(address));
 }
 
 // bind again
@@ -234,13 +226,26 @@ void MainWnd::broadcast(const QString& source, const QList<QByteArray>& recipien
 		}
 }
 
-void MainWnd::onClear()
+void MainWnd::onClearLog()
 {
 	if(QMessageBox::warning(this, tr("Warning"), tr("Really clear the log?"),
 		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::Yes)
 	{
-		QSqlQuery query;
-		query.exec("delete from Logs");
+		QItemSelectionModel* selectionModel = ui.tvLogs->selectionModel();
+		QModelIndexList indexes = selectionModel->selection().indexes();
+		if(indexes.isEmpty())  // no selection, delete all
+		{
+			QSqlQuery query;
+			query.exec("delete from Logs");
+		}
+		else {
+			foreach(const QModelIndex& idx, indexes)
+			{
+				QSqlQuery query;
+				query.exec(tr("delete from Logs where ID = %1")
+						   .arg(modelLogs.data(modelLogs.index(idx.row(), 0)).toInt()));
+			}
+		}
 		modelLogs.select();
 	}
 }
@@ -248,9 +253,9 @@ void MainWnd::onClear()
 void MainWnd::onAbout() {
 	QMessageBox::about(this, tr("About"),
 		tr("<H3>TeamRadar Server</H3>"
-		   "<P>Cong Chen</P>"
-		   "<P>2011.8.18</P>"
-		   "<P><a href=mailto:CongChenUTD@Gmail.com>CongChenUTD@Gmail.com</a></P>"));
+		   "<P>Cong Chen &lt;<a href=mailto:CongChenUTD@Gmail.com>CongChenUTD@Gmail.com</a>&gt;</P>"
+		   "<P>Built on %1</P>")
+					   .arg(Setting::getInstance()->getCompileDate()));
 }
 
 void MainWnd::onExport()
@@ -365,8 +370,7 @@ void MainWnd::onRequestPhoto(const QString& targetUser)
 void MainWnd::onRequestColor(const QString& targetUser)
 {
 	QByteArray color = UsersModel::getColor(targetUser).toUtf8();
-	Sender* sender = getSender();
-	if(sender != 0)
+	if(Sender* sender = getSender())
 	{
 		sender->send(Sender::makeColorResponse(targetUser, color));
 		log(TeamRadarEvent(sender->getUserName(), "Request color of", targetUser));
@@ -379,7 +383,7 @@ void MainWnd::resizeUserTable()
 	ui.tvUsers->resizeColumnsToContents();
 }
 
-Events MainWnd::queryEvents(int count, const QStringList& users, const QStringList& eventTypes,
+Events MainWnd::queryEvents(const QStringList& users, const QStringList& eventTypes,
 							const QDateTime& startTime, const QDateTime& endTime)
 {
 	// query without phases
@@ -388,14 +392,12 @@ Events MainWnd::queryEvents(int count, const QStringList& users, const QStringLi
 	QString timeClause  = startTime.isNull() || endTime.isNull() ? "1"
 						: tr("Time between \"%1\" and \"%2\"").arg(startTime.toString(dateTimeFormat))
 															  .arg(endTime  .toString(dateTimeFormat));
-	QString countClause = tr("LIMIT %1").arg(count);
 	QSqlQuery query;
 	query.exec(tr("select Client, Event, Parameters, Time from Logs \
-				  where %1 and %2 and %3 order by Time desc %4")
+				  where %1 and %2 and %3 order by Time")
 			   .arg(userClause)
 			   .arg(eventClause)
-			   .arg(timeClause)
-			   .arg(countClause));
+			   .arg(timeClause));
 
 	Events result;
 	while(query.next())
@@ -403,7 +405,6 @@ Events MainWnd::queryEvents(int count, const QStringList& users, const QStringLi
 								 query.value(1).toString(),
 								 query.value(2).toString(),
 								 query.value(3).toString());
-	qSort(result.begin(), result.end());    // ascending order
 	return result;
 }
 
@@ -412,7 +413,7 @@ void MainWnd::onRequestEvents(const QStringList& users, const QStringList& event
 							  const QStringList& phases, int fuzziness)
 {
 	// query without phases
-	Events events = queryEvents(-1, users, eventTypes, startTime, endTime);
+	Events events = queryEvents(users, eventTypes, startTime, endTime);
 
 	// filter by phases
 	PhaseDivider divider(events, fuzziness);
@@ -444,16 +445,18 @@ void MainWnd::onJointProject(const QString& projectName)
 	broadcast(TeamRadarEvent(developer, "JOINED", projectName));
 }
 
-void MainWnd::onRequestRecent(int count)
+void MainWnd::onRequestLocation(const QString& targetUser)
 {
-	Events events = queryEvents(count);
-
-	// send
-	if(Sender* sender = getSender())
-	{
-		foreach(TeamRadarEvent event, events)
-			if(event.userName != sender->getUserName())
-				sender->send(Sender::makeRecentEventsResponse(event));
+	QSqlQuery query;
+	query.exec(tr("select Parameters from Logs where Client = \"%1\" \
+				  and Event = \"SAVE\" order by Time desc").arg(targetUser));
+	if(query.next()) {
+		if(Sender* sender = getSender())
+		{
+			sender->send(Sender::makeEventPacket(
+							 TeamRadarEvent(targetUser, "SAVE", query.value(0).toString())));
+			log(TeamRadarEvent(sender->getUserName(), "Request location of", targetUser));
+		}
 	}
 }
 

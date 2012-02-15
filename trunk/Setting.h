@@ -11,6 +11,7 @@ public:
 	QString getIPAddress() const;
 	quint16 getPort() const;
 	QString getPhotoDir() const;
+	QString getCompileDate() const;
 
 	void setIPAddress(const QString& address);
 	void setPort(quint16 port);

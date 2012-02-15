@@ -37,7 +37,7 @@ private slots:
 	void onConnectionError();
 	void onDisconnected();
 	void onReadyForUse();
-	void onClear();
+	void onClearLog();
 	void onAbout();
 	void onExport();
 	void onDelete();
@@ -49,22 +49,20 @@ private slots:
 	void onNewEvent(const QString& user, const QByteArray& message);
 	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
 	void onRegisterColor(const QString& user, const QByteArray& color);
-	void onRequestPhoto (const QString& targetUser);
-	void onRequestColor (const QString& targetUser);
+	void onRequestPhoto   (const QString& targetUser);
+	void onRequestColor   (const QString& targetUser);
+	void onRequestLocation(const QString& targetUser);
 	void onRequestEvents(const QStringList& users, const QStringList& eventTypes,
 						 const QDateTime& startTime, const QDateTime& endTime,
 						 const QStringList& phases, int fuzziness);
 	void onChat(const QList<QByteArray>& recipients, const QByteArray& content);
 	void onJointProject(const QString& projectName);
-	void onRequestRecent(int count);
 
 private:
 	void createTray();
 	void updateLocalAddresses();                               // find local IPs
 	void removeConnection(Connection* connection);
 	bool connectionExists(const Connection* connection) const;
-	QString getCurrentLocalAddress() const;
-	void    setCurrentLocalAddress(const QString& address);
 	Sender* getSender() const;                                   // sender associated with the connection
 	QString getSourceUserName() const;                           // get the user name of the signal
 	QList<QByteArray> getCoworkers(const QString& user) const;   // peers on the same project
@@ -75,8 +73,7 @@ private:
 	void broadcast(const QString& source, const QByteArray& packet);   // to the group
 	void broadcast(const TeamRadarEvent& event);
 	void log      (const TeamRadarEvent& event);
-	Events queryEvents(int count = -1,
-					   const QStringList& users      = QStringList(),
+	Events queryEvents(const QStringList& users      = QStringList(),
 					   const QStringList& eventTypes = QStringList(),
 					   const QDateTime&   startTime  = QDateTime(),
 					   const QDateTime&   endTime    = QDateTime());
