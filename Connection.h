@@ -41,7 +41,7 @@ public:
 		RequestProjects,   // REQUEST_PROJECTS: [empty]
 		JoinProject,       // JOIN_PROJECT: projectname
 		RequestAllUsers,   // REQUEST_ALLUSERS: [empty], server knows the user name
-		RequestRecent      // REQUEST_RECENT: event count
+		RequestLocation    // targetUser
 	} DataType;
 
 	typedef void(Receiver::*Parser)(const QByteArray& buffer);
@@ -69,7 +69,7 @@ signals:
 	void requestTimeSpan();
 	void requestProjects();
 	void joinProject(const QString& projectName);
-	void requestRecent(int count);
+	void requestLocation(const QString& targetUser);
 
 private:
 	void parseGreeting       (const QByteArray& buffer);
@@ -85,7 +85,7 @@ private:
 	void parseJoinProject    (const QByteArray& buffer);
 	void parseEvents         (const QByteArray& buffer);
 	void parseChat           (const QByteArray& buffer);
-	void parseRequestRecent  (const QByteArray& buffer);
+	void parseRequestLocation(const QByteArray& buffer);
 
 private:
 	Connection* connection;
@@ -183,10 +183,10 @@ public:
 	static QByteArray makePhotoResponse(const QString& fileName,   const QByteArray& photoData);
 	static QByteArray makeColorResponse(const QString& targetUser, const QByteArray& color);
 	static QByteArray makeEventsResponse(const TeamRadarEvent& event);
-	static QByteArray makeRecentEventsResponse(const TeamRadarEvent& event);
 	static QByteArray makeChatPacket(const QString& user, const QByteArray& content);
 	static QByteArray makeTimeSpanResponse(const QByteArray& start, const QByteArray& end);
 	static QByteArray makeProjectsResponse(const QList<QByteArray>& projects);
+	static QByteArray makeLocationResponse(const QString& targetUser, const QString& location);
 
 private:
 	static QByteArray makeEventPacket(const QByteArray& header, const TeamRadarEvent& event);

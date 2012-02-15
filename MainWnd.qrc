@@ -1,5 +1,6 @@
 <RCC>
-  <qresource prefix="MainWnd">
-    <file>Images/Server.png</file>
-  </qresource>
+    <qresource prefix="/MainWnd">
+        <file>Images/Server.png</file>
+        <file>CompileDate.txt</file>
+    </qresource>
 </RCC>
