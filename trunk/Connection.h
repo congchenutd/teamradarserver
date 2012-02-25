@@ -24,9 +24,12 @@ public:
 		Greeting,          // GREETING: [OK, CONNECTED]/[WRONG_USER]
 		Event,             // EVENT: event type#parameters
 						   //	Format of parameters: parameter1#parameter2#...
-		RequestUserList,   // REQUEST_USERLIST: [empty], server knows the user name
 		RegisterPhoto,     // REGISTER_PHOTO: file format#binary photo data
 		RegisterColor,     // REGISTER_COLOR: color
+		JoinProject,       // JOIN_PROJECT: projectname
+		Chat,              // CHAT: recipients#content
+						   //	recipients = name1;name2;...
+		RequestUserList,   // REQUEST_USERLIST: [empty], server knows the user name
 		RequestPhoto,      // REQEUST_PHOTO: target user name
 		RequestColor,      // REQUEST_COLOR: target user name
 		RequestEvents,	   // REQUEST_EVENTS: user list#event types#time span#phases#fuzziness
@@ -35,11 +38,8 @@ public:
 						   //	time span: start time;end time
 						   //	phases: phase1;phase2;...
 						   //	fuzziness: an integer for percentage
-		Chat,              // CHAT: recipients#content
-						   //	recipients = name1;name2;...
 		RequestTimeSpan,   // REQUEST_TIMESPAN: [empty]
 		RequestProjects,   // REQUEST_PROJECTS: [empty]
-		JoinProject,       // JOIN_PROJECT: projectname
 		RequestAllUsers,   // REQUEST_ALLUSERS: [empty], server knows the user name
 		RequestLocation    // targetUser
 	} DataType;
