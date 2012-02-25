@@ -445,6 +445,7 @@ void MainWnd::onJointProject(const QString& projectName)
 	broadcast(TeamRadarEvent(developer, "JOINED", projectName));
 }
 
+// send a SAVE event to update the client's display of targetUser's location
 void MainWnd::onRequestLocation(const QString& targetUser)
 {
 	QSqlQuery query;
