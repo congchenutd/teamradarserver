@@ -297,6 +297,16 @@ void MainWnd::onRequestAllUsers()
 	}
 }
 
+QList<QByteArray> MainWnd::getOnlineUsers() const
+{
+	QList<QByteArray> allPeers = getCoworkers(getSourceUserName());
+	QList<QByteArray> onlinePeers;         // pick online users
+	foreach(QString peer, allPeers)
+		if(connections.contains(peer))
+			onlinePeers << peer.toUtf8();
+	return onlinePeers;
+}
+
 void MainWnd::onRequestTimeSpan()
 {
 	QSqlQuery query;
@@ -475,16 +485,6 @@ QString MainWnd::getSourceUserName() const
 
 QList<QByteArray> MainWnd::getCoworkers(const QString& user) const {
 	return UsersModel::getProjectMembers(UsersModel::getProject(user));
-}
-
-QList<QByteArray> MainWnd::getOnlineUsers() const
-{
-	QList<QByteArray> allPeers = getCoworkers(getSourceUserName());
-	QList<QByteArray> onlinePeers;         // pick online users
-	foreach(QString peer, allPeers)
-		if(connections.contains(peer))
-			onlinePeers << peer.toUtf8();
-	return onlinePeers;
 }
 
 void MainWnd::contextMenuEvent(QContextMenuEvent* event)
