@@ -1,0 +1,2 @@
+date "+%m/%d/%Y" > CompileDate.txt
+touch *.qrc
