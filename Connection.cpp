@@ -192,7 +192,7 @@ void Receiver::parseGreeting(const QByteArray& buffer)
 	else
 	{
 		connection->write(Sender::makePacket("GREETING", "OK, CONNECTED"));
-		connection->setReadyForUse();	
+		connection->setReadyForUse();
 	}
 }
 
@@ -209,7 +209,7 @@ void Receiver::parseEvents(const QByteArray& buffer)
 	QString endTime    = sections[2].split(Connection::Delimiter2).at(1);
 	QStringList phases = QString(sections[3]).split(Connection::Delimiter2);
 	int fuzziness      = sections[4].toInt();
-	emit requestEvents(users, events, QDateTime::fromString(startTime, MainWnd::dateTimeFormat), 
+	emit reqEvents(users, events, QDateTime::fromString(startTime, MainWnd::dateTimeFormat),
 									  QDateTime::fromString(endTime,   MainWnd::dateTimeFormat),
 									  phases, fuzziness);
 }
@@ -227,70 +227,72 @@ void Receiver::parseChat(const QByteArray& buffer)
 void Receiver::parseEvent(const QByteArray& buffer) {
 	emit newEvent(connection->getUserName(), buffer);
 }
-void Receiver::parseRegisterPhoto(const QByteArray& buffer) {
-	emit registerPhoto(connection->getUserName(), buffer);
+void Receiver::parseRegPhoto(const QByteArray& buffer) {
+	emit regPhoto(connection->getUserName(), buffer);
 }
-void Receiver::parseRegisterColor(const QByteArray& buffer) {
-	emit registerColor(connection->getUserName(), buffer);
+void Receiver::parseRegColor(const QByteArray& buffer) {
+	emit regColor(connection->getUserName(), buffer);
 }
-void Receiver::parseRequestPhoto(const QByteArray& buffer) {
-	emit requestPhoto(buffer);
+void Receiver::parseReqOnline(const QByteArray& buffer) {
+	emit reqOnline(buffer);
 }
-void Receiver::parseRequestUserList(const QByteArray&) {
-	emit requestUserList();
+void Receiver::parseReqPhoto(const QByteArray& buffer) {
+	emit reqPhoto(buffer);
 }
-void Receiver::parseRequestAllUsers(const QByteArray&) {
-	emit requestAllUsers();
+void Receiver::parseReqTeamMembers(const QByteArray&) {
+	emit reqTeamMembers();
 }
-void Receiver::parseRequestColor(const QByteArray& buffer) {
-	emit requestColor(buffer);
+void Receiver::parseReqColor(const QByteArray& buffer) {
+	emit reqColor(buffer);
 }
-void Receiver::parseRequestTimeSpan(const QByteArray&) {
-	emit requestTimeSpan();
+void Receiver::parseReqTimeSpan(const QByteArray&) {
+	emit reqTimeSpan();
 }
-void Receiver::parseRequestProjects(const QByteArray&) {
-	emit requestProjects();
+void Receiver::parseReqProjects(const QByteArray&) {
+	emit reqProjects();
 }
 void Receiver::parseJoinProject(const QByteArray& buffer) {
 	emit joinProject(buffer);
 }
-void Receiver::parseRequestLocation(const QByteArray& buffer) {
-	emit requestLocation(buffer);
+void Receiver::parseReqLocation(const QByteArray& buffer) {
+	emit reqLocation(buffer);
 }
 
 void Receiver::init()
 {
 	// header -> date type
-	dataTypes.insert("GREETING",         Greeting);
-	dataTypes.insert("EVENT",            Event);
-	dataTypes.insert("REGISTER_PHOTO",   RegisterPhoto);
-	dataTypes.insert("REGISTER_COLOR",   RegisterColor);
-	dataTypes.insert("REQUEST_USERLIST", RequestUserList);
-	dataTypes.insert("REQUEST_PHOTO",    RequestPhoto);
-	dataTypes.insert("REQUEST_COLOR",    RequestColor);
-	dataTypes.insert("REQUEST_EVENTS",   RequestEvents);
-	dataTypes.insert("CHAT",             Chat);
-	dataTypes.insert("REQUEST_TIMESPAN", RequestTimeSpan);
-	dataTypes.insert("REQUEST_PROJECTS", RequestProjects);
-	dataTypes.insert("JOIN_PROJECT",     JoinProject);
-	dataTypes.insert("REQUEST_ALLUSERS", RequestAllUsers);
-	dataTypes.insert("REQUEST_LOCATION", RequestLocation);
+	dataTypes.insert("GREETING", Greeting);
+	dataTypes.insert("EVENT",    Event);
+	dataTypes.insert("CHAT",     Chat);
+
+	dataTypes.insert("REG_PHOTO",    RegPhoto);
+	dataTypes.insert("REG_COLOR",    RegColor);
+	dataTypes.insert("JOIN_PROJECT", JoinProject);
+
+	dataTypes.insert("REQ_ONLINE",      ReqOnline);
+	dataTypes.insert("REQ_PHOTO",       ReqPhoto);
+	dataTypes.insert("REQ_COLOR",       ReqColor);
+	dataTypes.insert("REQ_EVENTS",      ReqEvents);
+	dataTypes.insert("REQ_TIMESPAN",    ReqTimeSpan);
+	dataTypes.insert("REQ_PROJECTS",    ReqProjects);
+	dataTypes.insert("REQ_TEAMMEMBERS", ReqTeamMembers);
+	dataTypes.insert("REQ_LOCATION",    ReqLocation);
 
 	// data type -> parser
-	parsers.insert(Greeting,        &Receiver::parseGreeting);
-	parsers.insert(Event,           &Receiver::parseEvent);
-	parsers.insert(RegisterPhoto,   &Receiver::parseRegisterPhoto);
-	parsers.insert(RegisterColor,   &Receiver::parseRegisterColor);
-	parsers.insert(RequestUserList, &Receiver::parseRequestUserList);
-	parsers.insert(RequestAllUsers, &Receiver::parseRequestAllUsers);
-	parsers.insert(RequestPhoto,    &Receiver::parseRequestPhoto);
-	parsers.insert(RequestColor,    &Receiver::parseRequestColor);
-	parsers.insert(RequestEvents,   &Receiver::parseEvents);
-	parsers.insert(Chat,            &Receiver::parseChat);
-	parsers.insert(RequestTimeSpan, &Receiver::parseRequestTimeSpan);
-	parsers.insert(RequestProjects, &Receiver::parseRequestProjects);
-	parsers.insert(JoinProject,     &Receiver::parseJoinProject);
-	parsers.insert(RequestLocation, &Receiver::parseRequestLocation);
+	parsers.insert(Greeting,       &Receiver::parseGreeting);
+	parsers.insert(Event,          &Receiver::parseEvent);
+	parsers.insert(Chat,           &Receiver::parseChat);
+	parsers.insert(ReqEvents,      &Receiver::parseEvents);
+	parsers.insert(JoinProject,    &Receiver::parseJoinProject);
+	parsers.insert(RegPhoto,       &Receiver::parseRegPhoto);
+	parsers.insert(RegColor,       &Receiver::parseRegColor);
+	parsers.insert(ReqTeamMembers, &Receiver::parseReqTeamMembers);
+	parsers.insert(ReqOnline,      &Receiver::parseReqOnline);
+	parsers.insert(ReqPhoto,       &Receiver::parseReqPhoto);
+	parsers.insert(ReqColor,       &Receiver::parseReqColor);
+	parsers.insert(ReqTimeSpan,    &Receiver::parseReqTimeSpan);
+	parsers.insert(ReqProjects,    &Receiver::parseReqProjects);
+	parsers.insert(ReqLocation,    &Receiver::parseReqLocation);
 }
 
 QMap<QString, Receiver::DataType>          Receiver::dataTypes;
@@ -343,34 +345,35 @@ QByteArray Sender::makeEventPacket(const TeamRadarEvent& event) {
 
 // respond to offline events request
 // one request results in multiple respond, one respond for one event
-QByteArray Sender::makeEventsResponse(const TeamRadarEvent& event) {
-	return makeEventPacket("EVENT_RESPONSE", event);
+QByteArray Sender::makeEventsReply(const TeamRadarEvent& event) {
+	return makeEventPacket("EVENTS_REPLY", event);
 }
 
-
-QByteArray Sender::makeUserListResponse(const QList<QByteArray>& userList) {
-	return makePacket("USERLIST_RESPONSE", userList);
+QByteArray Sender::makeTeamMembersReply(const QList<QByteArray>& userList) {
+	return makePacket("TEAMMEMBERS_REPLY", userList);
 }
-QByteArray Sender::makeAllUsersResponse(const QList<QByteArray>& userList) {
-	return makePacket("ALLUSERS_RESPONSE", userList);
+QByteArray Sender::makeOnlineReply(const QString& targetUser, bool online)
+{
+	QByteArray value = online ? "TRUE" : "FALSE";
+	return makePacket("ONLINE_REPLY", QList<QByteArray>() << targetUser.toUtf8() << value);
 }
-QByteArray Sender::makePhotoResponse(const QString& fileName, const QByteArray& photoData) {
-	return makePacket("PHOTO_RESPONSE", QList<QByteArray>() << fileName.toUtf8() << photoData);
+QByteArray Sender::makePhotoReply(const QString& fileName, const QByteArray& photoData) {
+	return makePacket("PHOTO_REPLY", QList<QByteArray>() << fileName.toUtf8() << photoData);
 }
-QByteArray Sender::makeColorResponse(const QString& targetUser, const QByteArray& color) {
-	return makePacket("COLOR_RESPONSE", QList<QByteArray>() << targetUser.toUtf8() << color);
+QByteArray Sender::makeColorReply(const QString& targetUser, const QByteArray& color) {
+	return makePacket("COLOR_REPLY", QList<QByteArray>() << targetUser.toUtf8() << color);
 }
 QByteArray Sender::makeChatPacket(const QString& user, const QByteArray& content) {
 	return makePacket("CHAT", QList<QByteArray>() << user.toUtf8() << content);
 }
-QByteArray Sender::makeTimeSpanResponse(const QByteArray& start, const QByteArray& end) {
-	return makePacket("TIMESPAN_RESPONSE", QList<QByteArray>() << start << end);
+QByteArray Sender::makeTimeSpanReply(const QByteArray& start, const QByteArray& end) {
+	return makePacket("TIMESPAN_REPLY", QList<QByteArray>() << start << end);
 }
-QByteArray Sender::makeProjectsResponse(const QList<QByteArray>& projects) {
-	return makePacket("PROJECTS_RESPONSE", projects);
+QByteArray Sender::makeProjectsReply(const QList<QByteArray>& projects) {
+	return makePacket("PROJECTS_REPLY", projects);
 }
-QByteArray Sender::makeLocationResponse(const QString& targetUser, const QString& location) {
-	return makePacket("LOCATION_RESPONSE", QList<QByteArray>() << targetUser.toUtf8()
+QByteArray Sender::makeLocationReply(const QString& targetUser, const QString& location) {
+	return makePacket("LOCATION_REPLY", QList<QByteArray>() << targetUser.toUtf8()
 															   << location.toUtf8());
 }
 
