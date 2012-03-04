@@ -1,7 +1,7 @@
 #include "MainWnd.h"
 #include "Connection.h"
-#include "../ImageColorBoolModel/ImageColorBoolProxy.h"
-#include "../ImageColorBoolModel/ImageColorBoolDelegate.h"
+#include "ImageColorBoolProxy.h"
+#include "ImageColorBoolDelegate.h"
 #include "PhaseDivider.h"
 #include "Setting.h"
 #include <QMessageBox>
@@ -54,8 +54,8 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	resizeUserTable();
 
 	connect(&server, SIGNAL(newConnection(Connection*)), this, SLOT(onNewConnection(Connection*)));
-	connect(ui.sbPort,     SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
 	connect(&modelUsers,   SIGNAL(selected()),        this, SLOT(resizeUserTable()));
+	connect(ui.sbPort,     SIGNAL(valueChanged(int)), this, SLOT(onPortChanged(int)));
 	connect(ui.btClearLog, SIGNAL(clicked()),         this, SLOT(onClearLog()));
 	connect(ui.btExport,   SIGNAL(clicked()),         this, SLOT(onExport()));
 }
@@ -121,19 +121,20 @@ void MainWnd::onReadyForUse()
 		return;
 
 	Receiver* receiver = connection->getReceiver();
-	connect(receiver, SIGNAL(requestUserList()), this, SLOT(onRequestUserList()));
-	connect(receiver, SIGNAL(requestAllUsers()), this, SLOT(onRequestAllUsers()));
-	connect(receiver, SIGNAL(requestTimeSpan()), this, SLOT(onRequestTimeSpan()));
-	connect(receiver, SIGNAL(requestProjects()), this, SLOT(onRequestProjects()));
+	connect(receiver, SIGNAL(reqTeamMembers()), this, SLOT(onReqTeamMembers()));
+	connect(receiver, SIGNAL(reqTimeSpan()),    this, SLOT(onReqTimeSpan()));
+	connect(receiver, SIGNAL(reqProjects()),    this, SLOT(onReqProjects()));
 	connect(receiver, SIGNAL(newEvent(QString, QByteArray)), this, SLOT(onNewEvent(QString, QByteArray)));
-	connect(receiver, SIGNAL(registerPhoto(QString, QByteArray)), this, SLOT(onRegisterPhoto(QString, QByteArray)));
-	connect(receiver, SIGNAL(registerColor(QString, QByteArray)), this, SLOT(onRegisterColor(QString, QByteArray)));
-	connect(receiver, SIGNAL(requestPhoto   (QString)), this, SLOT(onRequestPhoto   (QString)));
-	connect(receiver, SIGNAL(requestColor   (QString)), this, SLOT(onRequestColor   (QString)));
-	connect(receiver, SIGNAL(requestLocation(QString)), this, SLOT(onRequestLocation(QString)));
-	connect(receiver, SIGNAL(requestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)),
-			this,     SLOT(onRequestEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)));
-	connect(receiver, SIGNAL(chatMessage(QList<QByteArray>, QByteArray)), this, SLOT(onChat(QList<QByteArray>, QByteArray)));
+	connect(receiver, SIGNAL(regPhoto(QString, QByteArray)), this, SLOT(onegPhoto(QString, QByteArray)));
+	connect(receiver, SIGNAL(regColor(QString, QByteArray)), this, SLOT(onRegColor(QString, QByteArray)));
+	connect(receiver, SIGNAL(reqOnline  (QString)), this, SLOT(onReqOnline  (QString)));
+	connect(receiver, SIGNAL(reqPhoto   (QString)), this, SLOT(onReqPhoto   (QString)));
+	connect(receiver, SIGNAL(reqColor   (QString)), this, SLOT(onReqColor   (QString)));
+	connect(receiver, SIGNAL(reqLocation(QString)), this, SLOT(onReqLocation(QString)));
+	connect(receiver, SIGNAL(reqEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)),
+			this,     SLOT(onReqEvents(QStringList, QStringList, QDateTime, QDateTime, QStringList, int)));
+	connect(receiver, SIGNAL(chatMessage(QList<QByteArray>, QByteArray)),
+			this, SLOT(onChat(QList<QByteArray>, QByteArray)));
 	connect(receiver, SIGNAL(joinProject(QString)), this, SLOT(onJointProject(QString)));
 
 	// new client
@@ -205,16 +206,19 @@ void MainWnd::log(const TeamRadarEvent& event)
 	ui.tvLogs->resizeColumnsToContents();
 }
 
+// broadcast packet to the group
 void MainWnd::broadcast(const QString& source, const QByteArray& packet) {
-	broadcast(source, getCoworkers(source), packet);   // broadcast in the group
+	broadcast(source, getCoworkers(source), packet);
 }
 
+// broadcast event to the group
 void MainWnd::broadcast(const TeamRadarEvent& event)
 {
 	broadcast(event.userName, Sender::makeEventPacket(event));
 	log(event);
 }
 
+// broadcast packet from source to recipients
 void MainWnd::broadcast(const QString& source, const QList<QByteArray>& recipients, const QByteArray& packet)
 {
 	foreach(QString recipient, recipients)    // broadcast to the recipients
@@ -239,7 +243,7 @@ void MainWnd::onClearLog()
 			query.exec("delete from Logs");
 		}
 		else {
-			foreach(const QModelIndex& idx, indexes)
+			foreach(const QModelIndex& idx, indexes)   // delete selected
 			{
 				QSqlQuery query;
 				query.exec(tr("delete from Logs where ID = %1")
@@ -277,37 +281,17 @@ void MainWnd::onExport()
 	modelLogs.sort(TIME, Qt::DescendingOrder);
 }
 
-void MainWnd::onRequestUserList()
+void MainWnd::onReqTeamMembers()
 {
 	if(Sender* sender = getSender())
 	{
-		QList<QByteArray> onlinePeers = getOnlineUsers();
-		sender->send(Sender::makeUserListResponse(onlinePeers));
-		log(TeamRadarEvent(sender->getUserName(), "Request online users"));
-	}
-}
-
-void MainWnd::onRequestAllUsers()
-{
-	if(Sender* sender = getSender())
-	{
-		QList<QByteArray> peers = getCoworkers(getSourceUserName());
-		sender->send(Sender::makeAllUsersResponse(peers));
+		QList<QByteArray> allPeers = getCoworkers(getSourceUserName());
+		sender->send(Sender::makeTeamMembersReply(allPeers));
 		log(TeamRadarEvent(sender->getUserName(), "Request all users"));
 	}
 }
 
-QList<QByteArray> MainWnd::getOnlineUsers() const
-{
-	QList<QByteArray> allPeers = getCoworkers(getSourceUserName());
-	QList<QByteArray> onlinePeers;         // pick online users
-	foreach(QString peer, allPeers)
-		if(connections.contains(peer))
-			onlinePeers << peer.toUtf8();
-	return onlinePeers;
-}
-
-void MainWnd::onRequestTimeSpan()
+void MainWnd::onReqTimeSpan()
 {
 	QSqlQuery query;
 	query.exec("select min(Time), max(Time) from Logs");
@@ -317,18 +301,18 @@ void MainWnd::onRequestTimeSpan()
 		QByteArray end   = query.value(1).toString().toUtf8();
 		Sender* sender = getSender();
 		if(sender != 0)
-			sender->send(Sender::makeTimeSpanResponse(start, end));
+			sender->send(Sender::makeTimeSpanReply(start, end));
 	}
 }
 
-void MainWnd::onRequestProjects()
+void MainWnd::onReqProjects()
 {
 	Sender* sender = getSender();
 	if(sender != 0)
-		sender->send(Sender::makeProjectsResponse(UsersModel::getProjects()));
+		sender->send(Sender::makeProjectsReply(UsersModel::getProjects()));
 }
 
-void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
+void MainWnd::onRegPhoto(const QString& user, const QByteArray& photoData)
 {
 	int seperator = photoData.indexOf(Connection::Delimiter1);
 	if(seperator == -1)
@@ -346,21 +330,29 @@ void MainWnd::onRegisterPhoto(const QString& user, const QByteArray& photoData)
 		log(TeamRadarEvent(user, "Register Photo"));
 
 		// update other users
-		broadcast(user, Sender::makePhotoResponse(fileName, fileData));
+		broadcast(user, Sender::makePhotoReply(fileName, fileData));
 	}
 }
 
-void MainWnd::onRegisterColor(const QString& user, const QByteArray& color)
+void MainWnd::onRegColor(const QString& user, const QByteArray& color)
 {
 	UsersModel::setColor(user, color);
 	modelUsers.select();
 	log(TeamRadarEvent(user, "Register Color"));
 
 	// update other users
-	broadcast(user, Sender::makeColorResponse(user, color));
+	broadcast(user, Sender::makeColorReply(user, color));
 }
 
-void MainWnd::onRequestPhoto(const QString& targetUser)
+void MainWnd::onReqOnline(const QString& targetUser) {
+	if(Sender* sender = getSender())
+	{
+		sender->send(Sender::makeOnlineReply(targetUser, UsersModel::isOnline(targetUser)));
+		log(TeamRadarEvent(sender->getUserName(), "Request online status of ", targetUser));
+	}
+}
+
+void MainWnd::onReqPhoto(const QString& targetUser)
 {
 	QString fileName = setting->getPhotoDir() + "/" + targetUser + ".png";
 	QFile file(fileName);
@@ -369,7 +361,7 @@ void MainWnd::onRequestPhoto(const QString& targetUser)
 		return;
 	if(file.open(QFile::ReadOnly))
 	{
-		sender->send(Sender::makePhotoResponse(fileName, file.readAll()));
+		sender->send(Sender::makePhotoReply(fileName, file.readAll()));
 		log(TeamRadarEvent(sender->getUserName(), "Request photo of", targetUser));
 	}
 	else {
@@ -377,12 +369,12 @@ void MainWnd::onRequestPhoto(const QString& targetUser)
 	}
 }
 
-void MainWnd::onRequestColor(const QString& targetUser)
+void MainWnd::onReqColor(const QString& targetUser)
 {
 	QByteArray color = UsersModel::getColor(targetUser).toUtf8();
 	if(Sender* sender = getSender())
 	{
-		sender->send(Sender::makeColorResponse(targetUser, color));
+		sender->send(Sender::makeColorReply(targetUser, color));
 		log(TeamRadarEvent(sender->getUserName(), "Request color of", targetUser));
 	}
 }
@@ -418,7 +410,7 @@ Events MainWnd::queryEvents(const QStringList& users, const QStringList& eventTy
 	return result;
 }
 
-void MainWnd::onRequestEvents(const QStringList& users, const QStringList& eventTypes,
+void MainWnd::onReqEvents(const QStringList& users, const QStringList& eventTypes,
 							  const QDateTime& startTime, const QDateTime& endTime,
 							  const QStringList& phases, int fuzziness)
 {
@@ -433,7 +425,7 @@ void MainWnd::onRequestEvents(const QStringList& users, const QStringList& event
 	Sender* sender = getSender();
 	if(sender != 0)
 		foreach(TeamRadarEvent event, dividedEvents)
-			sender->send(Sender::makeEventsResponse(event));
+			sender->send(Sender::makeEventsReply(event));
 }
 
 void MainWnd::onChat(const QList<QByteArray>& recipients, const QByteArray& content)
@@ -456,7 +448,7 @@ void MainWnd::onJointProject(const QString& projectName)
 }
 
 // send a SAVE event to update the client's display of targetUser's location
-void MainWnd::onRequestLocation(const QString& targetUser)
+void MainWnd::onReqLocation(const QString& targetUser)
 {
 	QSqlQuery query;
 	query.exec(tr("select Parameters from Logs where Client = \"%1\" \

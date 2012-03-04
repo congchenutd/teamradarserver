@@ -57,6 +57,13 @@ void UsersModel::makeOnline(const QString& name)
 	query.exec(tr("update Users set Online = \"true\" where Username = \"%1\"").arg(name));
 }
 
+bool UsersModel::isOnline(const QString &name)
+{
+	QSqlQuery query;
+	query.exec(tr("select Online from Users where Username = \"%1\"").arg(name));
+	return query.next() ? query.value(0).toBool() : false;
+}
+
 void UsersModel::addUser(const QString& name)
 {
 	QSqlQuery query;

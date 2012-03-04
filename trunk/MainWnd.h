@@ -42,21 +42,21 @@ private slots:
 	void onExport();
 	void onDelete();
 	void resizeUserTable();
-	void onRequestUserList();   // online users for certain project
-	void onRequestAllUsers();
-	void onRequestTimeSpan();
-	void onRequestProjects();
 	void onNewEvent(const QString& user, const QByteArray& message);
-	void onRegisterPhoto(const QString& user, const QByteArray& photoData);
-	void onRegisterColor(const QString& user, const QByteArray& color);
-	void onRequestPhoto   (const QString& targetUser);
-	void onRequestColor   (const QString& targetUser);
-	void onRequestLocation(const QString& targetUser);
-	void onRequestEvents(const QStringList& users, const QStringList& eventTypes,
-						 const QDateTime& startTime, const QDateTime& endTime,
-						 const QStringList& phases, int fuzziness);
+	void onRegPhoto(const QString& user, const QByteArray& photoData);
+	void onRegColor(const QString& user, const QByteArray& color);
 	void onChat(const QList<QByteArray>& recipients, const QByteArray& content);
 	void onJointProject(const QString& projectName);
+	void onReqTeamMembers();
+	void onReqTimeSpan();
+	void onReqProjects();
+	void onReqOnline  (const QString& targetUser);
+	void onReqPhoto   (const QString& targetUser);
+	void onReqColor   (const QString& targetUser);
+	void onReqLocation(const QString& targetUser);
+	void onReqEvents  (const QStringList& users, const QStringList& eventTypes,
+						 const QDateTime& startTime, const QDateTime& endTime,
+						 const QStringList& phases, int fuzziness);
 
 private:
 	void createTray();
@@ -66,7 +66,6 @@ private:
 	Sender* getSender() const;                                   // sender associated with the connection
 	QString getSourceUserName() const;                           // get the user name of the signal
 	QList<QByteArray> getCoworkers(const QString& user) const;   // peers on the same project
-	QList<QByteArray> getOnlineUsers() const;
 
 	// to specific recipients (when chatting)
 	void broadcast(const QString& source, const QList<QByteArray>& recipients, const QByteArray& packet);

@@ -20,28 +20,28 @@ class Receiver : public QObject
 
 public:
 	typedef enum {
-		Undefined,         // Format of body see below:
-		Greeting,          // GREETING: [OK, CONNECTED]/[WRONG_USER]
-		Event,             // EVENT: event type#parameters
-						   //	Format of parameters: parameter1#parameter2#...
-		RegisterPhoto,     // REGISTER_PHOTO: file format#binary photo data
-		RegisterColor,     // REGISTER_COLOR: color
-		JoinProject,       // JOIN_PROJECT: projectname
-		Chat,              // CHAT: recipients#content
-						   //	recipients = name1;name2;...
-		RequestUserList,   // REQUEST_USERLIST: [empty], server knows the user name
-		RequestPhoto,      // REQEUST_PHOTO: target user name
-		RequestColor,      // REQUEST_COLOR: target user name
-		RequestEvents,	   // REQUEST_EVENTS: user list#event types#time span#phases#fuzziness
-						   //	user list: name1;name2;...
-						   //	event types: type1;type2;...
-						   //	time span: start time;end time
-						   //	phases: phase1;phase2;...
-						   //	fuzziness: an integer for percentage
-		RequestTimeSpan,   // REQUEST_TIMESPAN: [empty]
-		RequestProjects,   // REQUEST_PROJECTS: [empty]
-		RequestAllUsers,   // REQUEST_ALLUSERS: [empty], server knows the user name
-		RequestLocation    // targetUser
+		Undefined,      // Format of body see below:
+		Greeting,       // GREETING: [OK, CONNECTED]/[WRONG_USER]
+		Event,          // EVENT: event type#parameters
+						// Format of parameters: parameter1#parameter2#...
+		RegPhoto,       // REG_PHOTO: file format#binary photo data
+		RegColor,       // REG_COLOR: color
+		JoinProject,    // JOIN_PROJECT: projectname
+		Chat,           // CHAT: recipients#content
+						//	recipients = name1;name2;...
+		ReqPhoto,       // REQ_PHOTO: target user name
+		ReqColor,       // REQ_COLOR: target user name
+		ReqEvents,	    // REQ_EVENTS: user list#event types#time span#phases#fuzziness
+						//   user list: name1;name2;...
+						//   event types: type1;type2;...
+						//   time span: start time;end time
+						//   phases: phase1;phase2;...
+						//   fuzziness: an integer for percentage
+		ReqTimeSpan,    // REQ_TIMESPAN: [empty]
+		ReqProjects,    // REQ_PROJECTS: [empty]
+		ReqTeamMembers, // REQ_ALLUSERS: [empty], server knows the user name
+		ReqLocation,    // targetUser
+		ReqOnline       // targetUser
 	} DataType;
 
 	typedef void(Receiver::*Parser)(const QByteArray& buffer);
@@ -56,36 +56,36 @@ public:
 
 signals:
 	void newEvent(const QString& from, const QByteArray& message);
-	void requestUserList();
-	void requestAllUsers();
-	void requestPhoto(const QString& targetUser);
-	void requestColor(const QString& targetUser);
-	void registerPhoto(const QString& user, const QByteArray& photo);
-	void registerColor(const QString& user, const QByteArray& color);
-	void requestEvents(const QStringList& users, const QStringList& eventTypes,
-					   const QDateTime& startTime, const QDateTime& endTime, 
-					   const QStringList& phases, int fuzziness);
 	void chatMessage(const QList<QByteArray>& recipients, const QByteArray& content);
-	void requestTimeSpan();
-	void requestProjects();
 	void joinProject(const QString& projectName);
-	void requestLocation(const QString& targetUser);
+	void reqTeamMembers();
+	void regPhoto (const QString& user, const QByteArray& photo);
+	void regColor (const QString& user, const QByteArray& color);
+	void reqOnline(const QString& targetUser);
+	void reqPhoto (const QString& targetUser);
+	void reqColor (const QString& targetUser);
+	void reqEvents(const QStringList& users, const QStringList& eventTypes,
+					   const QDateTime& startTime, const QDateTime& endTime,
+					   const QStringList& phases, int fuzziness);
+	void reqTimeSpan();
+	void reqProjects();
+	void reqLocation(const QString& targetUser);
 
 private:
-	void parseGreeting       (const QByteArray& buffer);
-	void parseEvent          (const QByteArray& buffer);
-	void parseRegisterPhoto  (const QByteArray& buffer);
-	void parseRegisterColor  (const QByteArray& buffer);
-	void parseRequestPhoto   (const QByteArray& buffer);
-	void parseRequestUserList(const QByteArray& buffer);
-	void parseRequestAllUsers(const QByteArray& buffer);
-	void parseRequestColor   (const QByteArray& buffer);
-	void parseRequestTimeSpan(const QByteArray& buffer);
-	void parseRequestProjects(const QByteArray& buffer);
-	void parseJoinProject    (const QByteArray& buffer);
-	void parseEvents         (const QByteArray& buffer);
-	void parseChat           (const QByteArray& buffer);
-	void parseRequestLocation(const QByteArray& buffer);
+	void parseGreeting      (const QByteArray& buffer);
+	void parseEvent         (const QByteArray& buffer);
+	void parseEvents        (const QByteArray& buffer);
+	void parseChat          (const QByteArray& buffer);
+	void parseRegPhoto      (const QByteArray& buffer);
+	void parseRegColor      (const QByteArray& buffer);
+	void parseReqOnline     (const QByteArray& buffer);
+	void parseReqPhoto      (const QByteArray& buffer);
+	void parseReqTeamMembers(const QByteArray& buffer);
+	void parseReqColor      (const QByteArray& buffer);
+	void parseReqTimeSpan   (const QByteArray& buffer);
+	void parseReqProjects   (const QByteArray& buffer);
+	void parseJoinProject   (const QByteArray& buffer);
+	void parseReqLocation   (const QByteArray& buffer);
 
 private:
 	Connection* connection;
@@ -95,7 +95,7 @@ private:
 
 // A TCP socket connected to the server
 // NOT a singleton: one connection for each client
-// After the connection is set up, 
+// After the connection is set up,
 // the parsing and composition of messages are handed to Receiver and Sender
 class Connection : public QTcpSocket
 {
@@ -152,17 +152,17 @@ private:
 // Format and send packets
 // Format of packet: header#size#body
 // Format of body:
-//		PHOTO_RESPONSE: [filename#binary photo data]/[empty]
-//		USERLIST_RESPONSE: username1#username2#...
-//		ALLUSERS_RESPONSE: username1#username2#...
+//		PHOTO_REPLY: [filename#binary photo data]/[empty]
+//		USERLIST_REPLY: username1#username2#...
+//		ALLUSERS_REPLY: username1#username2#...
 //		EVENT: user#event#[parameters]#time
 //			Format of parameters: parameter1#parameter2#...
-//		EVENT_RESPONSE: same as event
-//		RECENT_EVENT_RESPONSE: same as event
-//		COLOR_RESPONSE: targetUser#color
+//		EVENT_REPLY: same as event
+//		RECENT_EVENT_REPLY: same as event
+//		COLOR_REPLY: targetUser#color
 //		CHAT: peerName#content
-//		TIMESPAN_RESPONSE: start#end
-//		PROJECTS_RESPONSE: projectName1#name2...
+//		TIMESPAN_REPLY: start#end
+//		PROJECTS_REPLY: projectName1#name2...
 
 //	Formatting (makeXXX) and sending (send) are separated for flexibility
 
@@ -178,15 +178,15 @@ public:
 	static QByteArray makePacket(const QByteArray& header, const QByteArray& body = QByteArray());
 	static QByteArray makePacket(const QByteArray& header, const QList<QByteArray>& bodies);
 	static QByteArray makeEventPacket(const TeamRadarEvent& event);
-	static QByteArray makeUserListResponse(const QList<QByteArray>& userList);
-	static QByteArray makeAllUsersResponse(const QList<QByteArray>& userList);
-	static QByteArray makePhotoResponse(const QString& fileName,   const QByteArray& photoData);
-	static QByteArray makeColorResponse(const QString& targetUser, const QByteArray& color);
-	static QByteArray makeEventsResponse(const TeamRadarEvent& event);
 	static QByteArray makeChatPacket(const QString& user, const QByteArray& content);
-	static QByteArray makeTimeSpanResponse(const QByteArray& start, const QByteArray& end);
-	static QByteArray makeProjectsResponse(const QList<QByteArray>& projects);
-	static QByteArray makeLocationResponse(const QString& targetUser, const QString& location);
+	static QByteArray makeTeamMembersReply(const QList<QByteArray>& userList);
+	static QByteArray makeOnlineReply(const QString& targetUser, bool online);
+	static QByteArray makePhotoReply (const QString& fileName,   const QByteArray& photoData);
+	static QByteArray makeColorReply (const QString& targetUser, const QByteArray& color);
+	static QByteArray makeEventsReply(const TeamRadarEvent& event);
+	static QByteArray makeTimeSpanReply(const QByteArray& start, const QByteArray& end);
+	static QByteArray makeProjectsReply(const QList<QByteArray>& projects);
+	static QByteArray makeLocationReply(const QString& targetUser, const QString& location);
 
 private:
 	static QByteArray makeEventPacket(const QByteArray& header, const TeamRadarEvent& event);
