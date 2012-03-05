@@ -11,6 +11,7 @@
 #include <QSqlQuery>
 #include <QFileDialog>
 #include <QItemSelectionModel>
+#include <QtAlgorithms>
 
 MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	: QDialog(parent, flags)
@@ -30,8 +31,8 @@ MainWnd::MainWnd(QWidget *parent, Qt::WFlags flags)
 	modelLogs.setTable("Logs");
 	modelLogs.select();
 	ui.tvLogs->setModel(&modelLogs);
-	ui.tvLogs->hideColumn(ID);
-	ui.tvLogs->sortByColumn(TIME, Qt::DescendingOrder);
+	ui.tvLogs->hideColumn(LOG_ID);
+	ui.tvLogs->sortByColumn(LOG_TIME, Qt::DescendingOrder);
 	ui.tvLogs->resizeColumnsToContents();
 
 	UsersModel::makeAllOffline();
@@ -125,7 +126,7 @@ void MainWnd::onReadyForUse()
 	connect(receiver, SIGNAL(reqTimeSpan()),    this, SLOT(onReqTimeSpan()));
 	connect(receiver, SIGNAL(reqProjects()),    this, SLOT(onReqProjects()));
 	connect(receiver, SIGNAL(newEvent(QString, QByteArray)), this, SLOT(onNewEvent(QString, QByteArray)));
-	connect(receiver, SIGNAL(regPhoto(QString, QByteArray)), this, SLOT(onegPhoto(QString, QByteArray)));
+	connect(receiver, SIGNAL(regPhoto(QString, QByteArray)), this, SLOT(onRegPhoto(QString, QByteArray)));
 	connect(receiver, SIGNAL(regColor(QString, QByteArray)), this, SLOT(onRegColor(QString, QByteArray)));
 	connect(receiver, SIGNAL(reqOnline  (QString)), this, SLOT(onReqOnline  (QString)));
 	connect(receiver, SIGNAL(reqPhoto   (QString)), this, SLOT(onReqPhoto   (QString)));
@@ -152,7 +153,7 @@ void MainWnd::removeConnection(Connection* connection)
 	if(connectionExists(connection))
 	{
 		connections.remove(connection->getUserName());
-		broadcast(TeamRadarEvent(connection->getUserName(), "DISCONNECTED", ""));
+		broadcast(TeamRadarEvent(connection->getUserName(), "DISCONNECTED"));
 
 		UsersModel::makeOffline(connection->getUserName());
 		modelUsers.select();
@@ -197,18 +198,18 @@ void MainWnd::log(const TeamRadarEvent& event)
 {
 	int lastRow = modelLogs.rowCount();
 	modelLogs.insertRow(lastRow);
-	modelLogs.setData(modelLogs.index(lastRow, ID),         getNextID("Logs", "ID"));
-	modelLogs.setData(modelLogs.index(lastRow, TIME),       event.time.toString(dateTimeFormat));
-	modelLogs.setData(modelLogs.index(lastRow, CLIENT),     event.userName);
-	modelLogs.setData(modelLogs.index(lastRow, EVENT),      event.eventType);
-	modelLogs.setData(modelLogs.index(lastRow, PARAMETERS), event.parameters);
+	modelLogs.setData(modelLogs.index(lastRow, LOG_ID),         getNextID("Logs", "ID"));
+	modelLogs.setData(modelLogs.index(lastRow, LOG_TIME),       event.time.toString(dateTimeFormat));
+	modelLogs.setData(modelLogs.index(lastRow, LOG_CLIENT),     event.userName);
+	modelLogs.setData(modelLogs.index(lastRow, LOG_EVENT),      event.eventType);
+	modelLogs.setData(modelLogs.index(lastRow, LOG_PARAMETERS), event.parameters);
 	modelLogs.submitAll();
 	ui.tvLogs->resizeColumnsToContents();
 }
 
 // broadcast packet to the group
 void MainWnd::broadcast(const QString& source, const QByteArray& packet) {
-	broadcast(source, getCoworkers(source), packet);
+	broadcast(source, getTeamMembers(source), packet);
 }
 
 // broadcast event to the group
@@ -230,30 +231,6 @@ void MainWnd::broadcast(const QString& source, const QList<QByteArray>& recipien
 		}
 }
 
-void MainWnd::onClearLog()
-{
-	if(QMessageBox::warning(this, tr("Warning"), tr("Really clear the log?"),
-		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::Yes)
-	{
-		QItemSelectionModel* selectionModel = ui.tvLogs->selectionModel();
-		QModelIndexList indexes = selectionModel->selection().indexes();
-		if(indexes.isEmpty())  // no selection, delete all
-		{
-			QSqlQuery query;
-			query.exec("delete from Logs");
-		}
-		else {
-			foreach(const QModelIndex& idx, indexes)   // delete selected
-			{
-				QSqlQuery query;
-				query.exec(tr("delete from Logs where ID = %1")
-						   .arg(modelLogs.data(modelLogs.index(idx.row(), 0)).toInt()));
-			}
-		}
-		modelLogs.select();
-	}
-}
-
 void MainWnd::onAbout() {
 	QMessageBox::about(this, tr("About"),
 		tr("<H3>TeamRadar Server</H3>"
@@ -272,20 +249,19 @@ void MainWnd::onExport()
 	if(!file.open(QFile::WriteOnly | QFile::Truncate))
 		return;
 	QTextStream os(&file);
-	modelLogs.sort(TIME, Qt::AscendingOrder);
+	modelLogs.sort(LOG_TIME, Qt::AscendingOrder);
 	for(int i=0; i<modelLogs.rowCount(); ++i)
-		os << modelLogs.data(modelLogs.index(i, TIME))  .toString() << Connection::Delimiter1
-		   << modelLogs.data(modelLogs.index(i, CLIENT)).toString() << Connection::Delimiter1
-		   << modelLogs.data(modelLogs.index(i, EVENT)) .toString() << Connection::Delimiter1
-		   << modelLogs.data(modelLogs.index(i, PARAMETERS)).toString() << "\r\n";
-	modelLogs.sort(TIME, Qt::DescendingOrder);
+		os << modelLogs.data(modelLogs.index(i, LOG_TIME))  .toString() << Connection::Delimiter1
+		   << modelLogs.data(modelLogs.index(i, LOG_CLIENT)).toString() << Connection::Delimiter1
+		   << modelLogs.data(modelLogs.index(i, LOG_EVENT)) .toString() << Connection::Delimiter1
+		   << modelLogs.data(modelLogs.index(i, LOG_PARAMETERS)).toString() << "\r\n";
+	modelLogs.sort(LOG_TIME, Qt::DescendingOrder);   // restore order
 }
 
-void MainWnd::onReqTeamMembers()
-{
+void MainWnd::onReqTeamMembers() {
 	if(Sender* sender = getSender())
 	{
-		QList<QByteArray> allPeers = getCoworkers(getSourceUserName());
+		QList<QByteArray> allPeers = getTeamMembers(getSourceUserName());
 		sender->send(Sender::makeTeamMembersReply(allPeers));
 		log(TeamRadarEvent(sender->getUserName(), "Request all users"));
 	}
@@ -299,16 +275,13 @@ void MainWnd::onReqTimeSpan()
 	{
 		QByteArray start = query.value(0).toString().toUtf8();
 		QByteArray end   = query.value(1).toString().toUtf8();
-		Sender* sender = getSender();
-		if(sender != 0)
+		if(Sender* sender = getSender())
 			sender->send(Sender::makeTimeSpanReply(start, end));
 	}
 }
 
-void MainWnd::onReqProjects()
-{
-	Sender* sender = getSender();
-	if(sender != 0)
+void MainWnd::onReqProjects() {
+	if(Sender* sender = getSender())
 		sender->send(Sender::makeProjectsReply(UsersModel::getProjects()));
 }
 
@@ -324,6 +297,7 @@ void MainWnd::onRegPhoto(const QString& user, const QByteArray& photoData)
 	QFile file(fileName);
 	if(file.open(QFile::WriteOnly | QFile::Truncate))
 	{
+		// save the file to disk and db
 		file.write(fileData);
 		UsersModel::setImage(user, fileName);
 		modelUsers.select();
@@ -422,8 +396,7 @@ void MainWnd::onReqEvents(const QStringList& users, const QStringList& eventType
 	Events dividedEvents = divider.getEvents(phases);
 
 	// send
-	Sender* sender = getSender();
-	if(sender != 0)
+	if(Sender* sender = getSender())
 		foreach(TeamRadarEvent event, dividedEvents)
 			sender->send(Sender::makeEventsReply(event));
 }
@@ -450,6 +423,7 @@ void MainWnd::onJointProject(const QString& projectName)
 // send a SAVE event to update the client's display of targetUser's location
 void MainWnd::onReqLocation(const QString& targetUser)
 {
+	// find the last SAVE
 	QSqlQuery query;
 	query.exec(tr("select Parameters from Logs where Client = \"%1\" \
 				  and Event = \"SAVE\" order by Time desc").arg(targetUser));
@@ -475,34 +449,79 @@ QString MainWnd::getSourceUserName() const
 	return receiver != 0 ? receiver->getUserName() : QString();
 }
 
-QList<QByteArray> MainWnd::getCoworkers(const QString& user) const {
+QList<QByteArray> MainWnd::getTeamMembers(const QString& user) const {
 	return UsersModel::getProjectMembers(UsersModel::getProject(user));
 }
 
 void MainWnd::contextMenuEvent(QContextMenuEvent* event)
 {
+	if(ui.tabWidget->currentIndex() == 0)
+		contextMenuLogs(event->globalPos());
+	else
+		contextMenuUsers(event->globalPos());
+}
+
+void MainWnd::contextMenuLogs(const QPoint& mousePosition)
+{
+	// must select one or more
+	QModelIndexList idxes = ui.tvLogs->selectionModel()->selectedRows();
+	if(idxes.isEmpty())
+		return;
+
+	QMenu menu(this);
+	QAction* actionDelete = new QAction("Delete", this);
+	connect(actionDelete, SIGNAL(triggered()), this, SLOT(onDelLogs()));
+	menu.addAction(actionDelete);
+	menu.exec(mousePosition);
+}
+
+void MainWnd::contextMenuUsers(const QPoint& mousePosition)
+{
+	// must select one or more
 	QModelIndexList idxes = ui.tvUsers->selectionModel()->selectedRows();
 	if(idxes.isEmpty())
 		return;
 
 	QMenu menu(this);
 	QAction* actionDelete = new QAction("Delete", this);
-	connect(actionDelete, SIGNAL(triggered()), this, SLOT(onDelete()));
+	connect(actionDelete, SIGNAL(triggered()), this, SLOT(onDelUser()));
 	menu.addAction(actionDelete);
-	menu.exec(event->globalPos());
+	menu.exec(mousePosition);
 }
 
-void MainWnd::onDelete()
+void MainWnd::onClearLog()
 {
-	QModelIndexList idxes = ui.tvUsers->selectionModel()->selectedRows();
-	if(idxes.isEmpty())
-		return;
+	if(QMessageBox::warning(this, tr("Warning"), tr("Really clear the log?"),
+		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::Yes)
+	{
+		QSqlQuery query;
+		query.exec("delete from Logs");
+		modelLogs.select();
+	}
+}
 
+void MainWnd::onDelUser()
+{
 	if(QMessageBox::warning(this, tr("Warning"), tr("Really delete this entry?"),
 		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::No)
 		return;
 
-	modelUsers.removeRow(idxes.front().row());
+	QModelIndexList indexes = ui.tvUsers->selectionModel()->selectedRows();
+	qSort(indexes.begin(), indexes.end(), qGreater<QModelIndex>());
+	foreach(const QModelIndex& idx, indexes)
+		modelUsers.removeRow(idx.row());
+}
+
+void MainWnd::onDelLogs()
+{
+	if(QMessageBox::warning(this, tr("Warning"), tr("Really delete the log?"),
+		QMessageBox::Yes | QMessageBox::No)	== QMessageBox::No)
+		return;
+
+	QModelIndexList indexes = ui.tvLogs->selectionModel()->selectedRows();
+	qSort(indexes.begin(), indexes.end(), qGreater<QModelIndex>());
+	foreach(const QModelIndex& idx, indexes)   // delete selected
+		modelLogs.removeRow(idx.row());
 }
 
 const QString MainWnd::dateTimeFormat = "yyyy-MM-dd HH:mm:ss";
