@@ -36,7 +36,7 @@ void Connection::onReadyRead()
 	do {
 		if(dataType == Receiver::Undefined && !readHeader())  // read header
 			return;
-		if(!hasEnoughData())                                  // read length, and wait data
+		if(!hasEnoughData())                                  // read length, and wait for data
 			return;
 		processData();
 	} while(bytesAvailable() > 0);
@@ -57,7 +57,7 @@ bool Connection::readHeader()
 		return false;
 	}
 
-	dataType = receiver->guessDataType(buffer);
+	dataType = receiver->guessDataType(buffer);    // read header type
 	buffer.clear();
 
 	if(dataType == Receiver::Undefined)   // ignore unknown
@@ -69,7 +69,7 @@ bool Connection::readHeader()
 	return true;
 }
 
-// read until '#' into buffer, return # of bytes read
+// read until '#' into buffer, return the number of bytes read
 int Connection::readDataIntoBuffer(int maxSize)
 {
 	if (maxSize > MaxBufferSize)
@@ -104,6 +104,7 @@ int Connection::getDataLength()
 	return number;
 }
 
+// wait for the data
 bool Connection::hasEnoughData()
 {
 	if(transferTimerID)   // reset timer
@@ -124,6 +125,7 @@ bool Connection::hasEnoughData()
 	return true;
 }
 
+// parse
 void Connection::processData()
 {
 	buffer = read(numBytes);
@@ -156,6 +158,7 @@ bool Connection::userExists(const QString& userName) {
 
 QSet<QString> Connection::userNames;
 
+
 //////////////////////////////////////////////////////////////////////////
 Receiver::Receiver(Connection* c) {
 	connection = c;
@@ -180,9 +183,8 @@ void Receiver::processData(Receiver::DataType dataType, const QByteArray& buffer
 		(this->*parsers[dataType])(buffer);   // call specific parser
 }
 
-void Receiver::parseGreeting(const QByteArray& buffer)
+void Receiver::parseGreeting(const QByteArray& userName)
 {
-	QString userName = buffer;
 	connection->setUserName(userName);
 	if(userName.isEmpty() || connection->userExists(userName))  // check user name
 	{
@@ -197,7 +199,7 @@ void Receiver::parseGreeting(const QByteArray& buffer)
 }
 
 // offline events request
-void Receiver::parseEvents(const QByteArray& buffer)
+void Receiver::parseReqEvents(const QByteArray& buffer)
 {
 	QList<QByteArray> sections = buffer.split(Connection::Delimiter1);
 	if(sections.size() != 5)
@@ -210,18 +212,17 @@ void Receiver::parseEvents(const QByteArray& buffer)
 	QStringList phases = QString(sections[3]).split(Connection::Delimiter2);
 	int fuzziness      = sections[4].toInt();
 	emit reqEvents(users, events, QDateTime::fromString(startTime, MainWnd::dateTimeFormat),
-									  QDateTime::fromString(endTime,   MainWnd::dateTimeFormat),
-									  phases, fuzziness);
+								  QDateTime::fromString(endTime,   MainWnd::dateTimeFormat),
+				   phases, fuzziness);
 }
 
 void Receiver::parseChat(const QByteArray& buffer)
 {
 	QList<QByteArray> sections = buffer.split(Connection::Delimiter1);
-	if(sections.size() != 2)
-		return;
-
-	QList<QByteArray> recipients = sections[0].split(Connection::Delimiter2);
-	emit chatMessage(recipients, sections[1]);
+	if(sections.size() == 2) {
+		QList<QByteArray> recipients = sections[0].split(Connection::Delimiter2);
+		emit chatMessage(recipients, sections[1]);
+	}
 }
 
 void Receiver::parseEvent(const QByteArray& buffer) {
@@ -282,7 +283,7 @@ void Receiver::init()
 	parsers.insert(Greeting,       &Receiver::parseGreeting);
 	parsers.insert(Event,          &Receiver::parseEvent);
 	parsers.insert(Chat,           &Receiver::parseChat);
-	parsers.insert(ReqEvents,      &Receiver::parseEvents);
+	parsers.insert(ReqEvents,      &Receiver::parseReqEvents);
 	parsers.insert(JoinProject,    &Receiver::parseJoinProject);
 	parsers.insert(RegPhoto,       &Receiver::parseRegPhoto);
 	parsers.insert(RegColor,       &Receiver::parseRegColor);
@@ -332,7 +333,8 @@ QByteArray Sender::makePacket(const QByteArray& header, const QList<QByteArray>&
 	return makePacket(header, joined);
 }
 
-QByteArray Sender::makeEventPacket(const QByteArray& header, const TeamRadarEvent &event) {
+// header can be customized (EVENT | EVENT_REPLY, they share the same body format)
+QByteArray Sender::makeEventPacket(const QByteArray& header, const TeamRadarEvent& event) {
 	return makePacket(header, QList<QByteArray>() << event.userName.toUtf8()
 												  << event.eventType.toUtf8()
 												  << event.parameters.toUtf8()
@@ -344,7 +346,7 @@ QByteArray Sender::makeEventPacket(const TeamRadarEvent& event) {
 }
 
 // respond to offline events request
-// one request results in multiple respond, one respond for one event
+// one request results in multiple reply, one reply for one event
 QByteArray Sender::makeEventsReply(const TeamRadarEvent& event) {
 	return makeEventPacket("EVENTS_REPLY", event);
 }

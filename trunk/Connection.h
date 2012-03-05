@@ -48,12 +48,14 @@ public:
 
 public:
 	Receiver(Connection* c);
-	DataType guessDataType(const QByteArray& header);
 	void processData(Receiver::DataType dataType, const QByteArray& buffer);
-	Sender* getSender() const;
-	QString getUserName() const;
-	static void init();
+	DataType guessDataType(const QByteArray& header);
+	Sender*  getSender() const;
+	QString  getUserName() const;
 
+	static void init();       // init header - parser associations
+
+	// parsing result
 signals:
 	void newEvent(const QString& from, const QByteArray& message);
 	void chatMessage(const QList<QByteArray>& recipients, const QByteArray& content);
@@ -71,10 +73,11 @@ signals:
 	void reqProjects();
 	void reqLocation(const QString& targetUser);
 
+	// parsers
 private:
-	void parseGreeting      (const QByteArray& buffer);
+	void parseGreeting      (const QByteArray& userName);
 	void parseEvent         (const QByteArray& buffer);
-	void parseEvents        (const QByteArray& buffer);
+	void parseReqEvents     (const QByteArray& buffer);
 	void parseChat          (const QByteArray& buffer);
 	void parseRegPhoto      (const QByteArray& buffer);
 	void parseRegColor      (const QByteArray& buffer);
@@ -89,34 +92,34 @@ private:
 
 private:
 	Connection* connection;
-	static QMap<QString, DataType> dataTypes;
-	static QMap<DataType, Parser>  parsers;
+	static QMap<QString, DataType> dataTypes;  // header -> datatype
+	static QMap<DataType, Parser>  parsers;    // datatype -> parser
 };
 
 // A TCP socket connected to the server
 // NOT a singleton: one connection for each client
 // After the connection is set up,
-// the parsing and composition of messages are handed to Receiver and Sender
+// the parsing and composition of messages are handed to Receiver and Sender, respectively
 class Connection : public QTcpSocket
 {
 	Q_OBJECT
 
 public:
 	Connection(QObject* parent = 0);
-	QString         getUserName()   const { return userName; }
-	Receiver*       getReceiver()   const { return receiver; }
-	Sender*         getSender()     const { return sender;   }
-	bool            isReadyForUse() const { return ready;    }
+	QString   getUserName()   const { return userName; }
+	Receiver* getReceiver()   const { return receiver; }
+	Sender*   getSender()     const { return sender;   }
+	bool      isReadyForUse() const { return ready;    }
 	void setUserName(const QString& name) { userName = name; }
 	void setReadyForUse();
 
 	static bool userExists(const QString& userName);
 
 protected:
-	void timerEvent(QTimerEvent* timerEvent);   // for transfer timeout
+	void timerEvent(QTimerEvent* timerEvent);   // transfer timeout
 
 signals:
-	void readyForUse();
+	void readyForUse();    // connected
 
 private slots:
 	void onReadyRead();    // data coming
@@ -149,24 +152,11 @@ private:
 	static QSet<QString> userNames;   // detects name duplication
 };
 
-// Format and send packets
-// Format of packet: header#size#body
-// Format of body:
-//		PHOTO_REPLY: [filename#binary photo data]/[empty]
-//		USERLIST_REPLY: username1#username2#...
-//		ALLUSERS_REPLY: username1#username2#...
-//		EVENT: user#event#[parameters]#time
-//			Format of parameters: parameter1#parameter2#...
-//		EVENT_REPLY: same as event
-//		RECENT_EVENT_REPLY: same as event
-//		COLOR_REPLY: targetUser#color
-//		CHAT: peerName#content
-//		TIMESPAN_REPLY: start#end
-//		PROJECTS_REPLY: projectName1#name2...
-
-//	Formatting (makeXXX) and sending (send) are separated for flexibility
 
 struct TeamRadarEvent;
+
+// Format and send packets
+// Formatting (makeXXX) and sending (send) are separated for flexibility
 class Sender : public QObject
 {
 public:
