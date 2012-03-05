@@ -23,7 +23,8 @@ HEADERS += Connection.h \
 		   UsersModel.h \
 		   ../ImageColorBoolModel/ImageColorBoolProxy.h \
 		   ../ImageColorBoolModel/ImageColorBoolDelegate.h \
-		   ../MySetting/MySetting.h
+		   ../MySetting/MySetting.h \
+    ConnectionPool.h
 FORMS += MainWnd.ui
 SOURCES += Connection.cpp \
 		   Main.cpp \
@@ -34,5 +35,6 @@ SOURCES += Connection.cpp \
 		   TeamRadarEvent.cpp \
 		   UsersModel.cpp \
 		   ../ImageColorBoolModel/ImageColorBoolProxy.cpp \
-		   ../ImageColorBoolModel/ImageColorBoolDelegate.cpp
+		   ../ImageColorBoolModel/ImageColorBoolDelegate.cpp \
+    ConnectionPool.cpp
 RESOURCES += MainWnd.qrc
