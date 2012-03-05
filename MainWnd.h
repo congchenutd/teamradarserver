@@ -11,6 +11,7 @@
 #include "Server.h"
 #include "UsersModel.h"
 #include "TeamRadarEvent.h"
+#include "ConnectionPool.h"
 
 struct TeamRadarEvent;
 class Setting;
@@ -19,8 +20,6 @@ class Sender;
 class MainWnd : public QDialog
 {
 	Q_OBJECT
-
-	typedef QMap<QString, Connection*> Connections;   // <user, connection>
 
 public:
 	MainWnd(QWidget *parent = 0, Qt::WFlags flags = 0);
@@ -43,9 +42,9 @@ private slots:
 	// Connection
 	void onPortChanged(int port);
 	void onNewConnection(Connection* connection);
-	void onConnectionError();
 	void onDisconnected();
 	void onReadyForUse();
+	void onChangeName(const QString& oldName, const QString& newName);
 
 	// events
 	void onNewEvent(const QString& user, const QByteArray& message);
@@ -61,16 +60,14 @@ private slots:
 	void onReqColor   (const QString& targetUser);
 	void onReqLocation(const QString& targetUser);
 	void onReqEvents  (const QStringList& users, const QStringList& eventTypes,
-						 const QDateTime& startTime, const QDateTime& endTime,
-						 const QStringList& phases, int fuzziness);
+					   const QDateTime& startTime, const QDateTime& endTime,
+					   const QStringList& phases, int fuzziness);
 
 private:
 	void createTray();
-	void updateLocalAddresses();                               // find local IPs
-	void removeConnection(Connection* connection);
-	bool connectionExists(const Connection* connection) const;
-	Sender* getSender() const;                  // sender of the connection responsible for the current signal
-	QString getSourceUserName() const;          // user name of the connection responsible for the current signal
+	void updateLocalAddresses();        // find local IPs
+	Sender* getSender() const;          // sender of the connection responsible for the current signal
+	QString getSourceUserName() const;  // user name of the connection responsible for the current signal
 	QList<QByteArray> getTeamMembers(const QString& user) const;   // all members on the same project
 
 	void broadcast(const QString& source, const QList<QByteArray>& recipients,
@@ -92,12 +89,12 @@ public:
 private:
 	Ui::MainWndClass ui;
 
-	Setting* setting;
+	Setting*         setting;
 	QSystemTrayIcon* trayIcon;
-	Server         server;
-	Connections    connections;
-	QSqlTableModel modelLogs;
-	UsersModel     modelUsers;
+	Server           server;
+	ConnectionPool   connectionPool;
+	QSqlTableModel   modelLogs;
+	UsersModel       modelUsers;
 
 };
 

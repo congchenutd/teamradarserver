@@ -22,6 +22,7 @@ public:
 	typedef enum {
 		Undefined,      // Format of body see below:
 		Greeting,       // GREETING: [OK, CONNECTED]/[WRONG_USER]
+		ChangeName,     // new name
 		Event,          // EVENT: event type#parameters
 						// Format of parameters: parameter1#parameter2#...
 		RegPhoto,       // REG_PHOTO: file format#binary photo data
@@ -76,6 +77,7 @@ signals:
 	// parsers
 private:
 	void parseGreeting      (const QByteArray& userName);
+	void parseChangeName    (const QByteArray& newName);
 	void parseEvent         (const QByteArray& buffer);
 	void parseReqEvents     (const QByteArray& buffer);
 	void parseChat          (const QByteArray& buffer);
@@ -110,7 +112,7 @@ public:
 	Receiver* getReceiver()   const { return receiver; }
 	Sender*   getSender()     const { return sender;   }
 	bool      isReadyForUse() const { return ready;    }
-	void setUserName(const QString& name) { userName = name; }
+	void setUserName(const QString& name);
 	void setReadyForUse();
 
 	static bool userExists(const QString& userName);
@@ -120,6 +122,7 @@ protected:
 
 signals:
 	void readyForUse();    // connected
+	void changeName(const QString& oldName, const QString& newName);
 
 private slots:
 	void onReadyRead();    // data coming

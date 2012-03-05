@@ -19,6 +19,15 @@ Connection::Connection(QObject *parent) : QTcpSocket(parent)
 	connect(this, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
 }
 
+void Connection::setUserName(const QString& name)
+{
+	if(name != userName && !name.isEmpty())
+	{
+		emit changeName(userName, name);
+		userName = name;
+	}
+}
+
 // transfer time out
 void Connection::timerEvent(QTimerEvent* timerEvent)
 {
@@ -198,6 +207,11 @@ void Receiver::parseGreeting(const QByteArray& userName)
 	}
 }
 
+void Receiver::parseChangeName(const QByteArray& newName) {
+	if(!newName.isEmpty())
+		connection->setUserName(newName);
+}
+
 // offline events request
 void Receiver::parseReqEvents(const QByteArray& buffer)
 {
@@ -262,9 +276,10 @@ void Receiver::parseReqLocation(const QByteArray& buffer) {
 void Receiver::init()
 {
 	// header -> date type
-	dataTypes.insert("GREETING", Greeting);
-	dataTypes.insert("EVENT",    Event);
-	dataTypes.insert("CHAT",     Chat);
+	dataTypes.insert("GREETING",    Greeting);
+	dataTypes.insert("CHANGE_NAME", ChangeName);
+	dataTypes.insert("EVENT",       Event);
+	dataTypes.insert("CHAT",        Chat);
 
 	dataTypes.insert("REG_PHOTO",    RegPhoto);
 	dataTypes.insert("REG_COLOR",    RegColor);
@@ -281,6 +296,7 @@ void Receiver::init()
 
 	// data type -> parser
 	parsers.insert(Greeting,       &Receiver::parseGreeting);
+	parsers.insert(ChangeName,     &Receiver::parseChangeName);
 	parsers.insert(Event,          &Receiver::parseEvent);
 	parsers.insert(Chat,           &Receiver::parseChat);
 	parsers.insert(ReqEvents,      &Receiver::parseReqEvents);

@@ -101,26 +101,40 @@ void MainWnd::onTrayActivated(QSystemTrayIcon::ActivationReason reason) {
 void MainWnd::onNewConnection(Connection* connection)
 {
 	connect(connection, SIGNAL(error(QAbstractSocket::SocketError)),
-			this, SLOT(onConnectionError()));
+			this, SLOT(onDisconnected()));
 	connect(connection, SIGNAL(disconnected()), this, SLOT(onDisconnected()));
 	connect(connection, SIGNAL(readyForUse()),  this, SLOT(onReadyForUse()));
 }
 
-void MainWnd::onConnectionError() {
-	onDisconnected();
-}
-
 void MainWnd::onDisconnected() {
 	if(Connection* connection = qobject_cast<Connection*>(sender()))
-		removeConnection(connection);
+	{
+		if(connectionPool.contains(connection))
+		{
+			connectionPool.remove(connection);
+			broadcast(TeamRadarEvent(connection->getUserName(), "DISCONNECTED"));
+
+			UsersModel::makeOffline(connection->getUserName());
+			modelUsers.select();
+		}
+
+		connection->deleteLater();
+	}
 }
 
 void MainWnd::onReadyForUse()
 {
 	Connection* connection = qobject_cast<Connection*>(sender());
-	if(!connection || connectionExists(connection))
+	if(!connection || connectionPool.contains(connection))
 		return;
 
+	// new client
+	connectionPool.insert(connection);
+	log(TeamRadarEvent(connection->getUserName(), "Connected"));
+	connect(connection, SIGNAL(changeName(QString, QString)),
+			this, SLOT(onChangeName(QString, QString)));
+
+	// signals
 	Receiver* receiver = connection->getReceiver();
 	connect(receiver, SIGNAL(reqTeamMembers()), this, SLOT(onReqTeamMembers()));
 	connect(receiver, SIGNAL(reqTimeSpan()),    this, SLOT(onReqTimeSpan()));
@@ -138,32 +152,28 @@ void MainWnd::onReadyForUse()
 			this, SLOT(onChat(QList<QByteArray>, QByteArray)));
 	connect(receiver, SIGNAL(joinProject(QString)), this, SLOT(onJointProject(QString)));
 
-	// new client
-	connections.insert(connection->getUserName(), connection);
-	log(TeamRadarEvent(connection->getUserName(), "Connected"));
-
 	// refresh the user table
 	UsersModel::addUser   (connection->getUserName());
 	UsersModel::makeOnline(connection->getUserName());
 	modelUsers.select();
 }
 
-void MainWnd::removeConnection(Connection* connection)
+void MainWnd::onChangeName(const QString& oldName, const QString& newName)
 {
-	if(connectionExists(connection))
-	{
-		connections.remove(connection->getUserName());
-		broadcast(TeamRadarEvent(connection->getUserName(), "DISCONNECTED"));
+	if(!connectionPool.renameSafe(oldName, newName))
+		return;
 
-		UsersModel::makeOffline(connection->getUserName());
-		modelUsers.select();
-	}
+	// db
+	QSqlQuery query;
+	query.exec(tr("update Logs set Client = \"%1\" where Client = \"%2\"")
+			   .arg(newName).arg(oldName));
+	query.exec(tr("update Users set Username = \"%1\" where Username = \"%2\"")
+			   .arg(newName).arg(oldName));
+	modelLogs.select();
+	modelUsers.select();
 
-	connection->deleteLater();
-}
-
-bool MainWnd::connectionExists(const Connection* connection) const {
-	return connections.contains(connection->getUserName());
+	// change the name of the connection
+	connectionPool.rename(oldName, newName);
 }
 
 // find all local IP addresses
@@ -222,10 +232,9 @@ void MainWnd::broadcast(const TeamRadarEvent& event)
 // broadcast packet from source to recipients
 void MainWnd::broadcast(const QString& source, const QList<QByteArray>& recipients, const QByteArray& packet)
 {
-	foreach(QString recipient, recipients)    // broadcast to the recipients
-		if(connections.contains(recipient))   // the recipient if online
-		{
-			Connection* connection = connections[recipient];
+	foreach(QString recipient, recipients)  // broadcast to the recipients
+		// the recipient is online
+		if(Connection* connection = connectionPool.getConnection(recipient)) {
 			if(connection->getUserName() != source)      // skip the source
 				connection->getSender()->send(packet);
 		}
@@ -423,7 +432,7 @@ void MainWnd::onJointProject(const QString& projectName)
 // send a SAVE event to update the client's display of targetUser's location
 void MainWnd::onReqLocation(const QString& targetUser)
 {
-	// find the last SAVE
+	// find the last SAVE event
 	QSqlQuery query;
 	query.exec(tr("select Parameters from Logs where Client = \"%1\" \
 				  and Event = \"SAVE\" order by Time desc").arg(targetUser));
